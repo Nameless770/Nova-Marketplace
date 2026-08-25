@@ -1,5 +1,11 @@
 import { Router } from 'express'
-import { addItem, currentCart, emptyCart, removeItem, updateItem } from '../controllers/cartController.js'
+import {
+  addItem,
+  currentCart,
+  emptyCart,
+  removeItem,
+  updateItem,
+} from '../controllers/cartController.js'
 import { authenticate, authorize } from '../middleware/auth.js'
 import { validateCartItem, validateQuantity } from '../middleware/cartValidation.js'
 import { asyncHandler } from '../utils/errors.js'

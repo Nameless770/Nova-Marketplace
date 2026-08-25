@@ -6,6 +6,7 @@ const inventoryReservationSchema = new mongoose.Schema(
     inventoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Inventory', required: true },
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', required: true },
     variantId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductVariant', required: true },
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     quantity: { type: Number, required: true, min: 1, validate: Number.isSafeInteger },
     status: {
       type: String,

@@ -8,13 +8,27 @@ import productRoutes from './routes/productRoutes.js'
 import categoryRoutes from './routes/categoryRoutes.js'
 import inventoryRoutes from './routes/inventoryRoutes.js'
 import cartRoutes from './routes/cartRoutes.js'
+import wishlistRoutes from './routes/wishlistRoutes.js'
+import orderRoutes from './routes/orderRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
+import reviewRoutes from './routes/reviewRoutes.js'
+import qaRoutes from './routes/qaRoutes.js'
+import couponRoutes from './routes/couponRoutes.js'
+import { stripeWebhook } from './controllers/paymentController.js'
+import { asyncHandler } from './utils/errors.js'
 import userRoutes from './routes/userRoutes.js'
 import { AppError } from './utils/errors.js'
+import notificationRoutes from './routes/notificationRoutes.js'
 
 export const app = express()
 
 app.use(helmet())
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }))
+app.post(
+  '/api/v1/payments/webhook',
+  express.raw({ type: 'application/json' }),
+  asyncHandler(stripeWebhook),
+)
 app.use(express.json({ limit: '1mb' }))
 
 app.get('/api/health', (_request, response) => {
@@ -29,6 +43,13 @@ app.use('/api/v1/products', productRoutes)
 app.use('/api/v1/categories', categoryRoutes)
 app.use('/api/v1/inventory', inventoryRoutes)
 app.use('/api/v1/cart', cartRoutes)
+app.use('/api/v1/wishlist', wishlistRoutes)
+app.use('/api/v1/orders', orderRoutes)
+app.use('/api/v1/payments', paymentRoutes)
+app.use('/api/v1/reviews', reviewRoutes)
+app.use('/api/v1/qa', qaRoutes)
+app.use('/api/v1/coupons', couponRoutes)
+app.use('/api/v1/notifications', notificationRoutes)
 
 app.use((_request, _response, next) => {
   next(new AppError(404, 'NOT_FOUND', 'Route not found'))

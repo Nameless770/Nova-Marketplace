@@ -19,7 +19,14 @@ const cartSchema = new mongoose.Schema(
       type: [cartItemSchema],
       validate: [(items) => items.length <= 100, 'A cart may contain at most 100 items'],
     },
-    currency: { type: String, required: true, uppercase: true, minlength: 3, maxlength: 3, default: 'USD' },
+    currency: {
+      type: String,
+      required: true,
+      uppercase: true,
+      minlength: 3,
+      maxlength: 3,
+      default: 'USD',
+    },
   },
   { timestamps: true },
 )
