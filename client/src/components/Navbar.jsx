@@ -19,8 +19,12 @@ export function Navbar() {
         {user ? (
           <>
             <span className="account-label">Hi, {user.firstName}</span>
-            <Link to="/cart" aria-label="Cart">Cart</Link>
-            <Link to="/profile" aria-label="Profile">Profile</Link>
+            <Link to="/cart" aria-label="Cart">
+              Cart
+            </Link>
+            <Link to="/profile" aria-label="Profile">
+              Profile
+            </Link>
             <button type="button" onClick={logout}>
               Sign out
             </button>

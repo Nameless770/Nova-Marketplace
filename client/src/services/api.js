@@ -58,7 +58,12 @@ export const orderApi = {
 }
 
 export const paymentApi = {
-  createCheckout: (orderId, idempotencyKey) => api.post(`/payments/orders/${orderId}/checkout-session`, {}, { headers: { 'Idempotency-Key': idempotencyKey } }),
+  createCheckout: (orderId, idempotencyKey) =>
+    api.post(
+      `/payments/orders/${orderId}/checkout-session`,
+      {},
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    ),
   getStatus: (orderId) => api.get(`/payments/orders/${orderId}`),
 }
 

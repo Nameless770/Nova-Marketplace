@@ -11,5 +11,28 @@ export function OrdersPage() {
   if (status === 'loading' || status === 'idle') return <LoadingState label="Loading orders" />
   if (status === 'error') return <ErrorState message={error} onRetry={reload} />
   const orders = data?.items || []
-  return <section><p className="eyebrow">Your history</p><h2>Orders</h2>{orders.length ? <div className="stack-list">{orders.map((order) => <Link className="line-item order-link" key={order._id} to={`/orders/${order._id}`}><div><h3>{order.orderNumber}</h3><span>{new Date(order.createdAt).toLocaleDateString()}</span></div><strong>{order.totalMinor} {order.currency}</strong><span>{order.status}</span></Link>)}</div> : <div className="empty-state">Your completed orders will appear here.</div>}</section>
+  return (
+    <section>
+      <p className="eyebrow">Your history</p>
+      <h2>Orders</h2>
+      {orders.length ? (
+        <div className="stack-list">
+          {orders.map((order) => (
+            <Link className="line-item order-link" key={order._id} to={`/orders/${order._id}`}>
+              <div>
+                <h3>{order.orderNumber}</h3>
+                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+              </div>
+              <strong>
+                {order.totalMinor} {order.currency}
+              </strong>
+              <span>{order.status}</span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="empty-state">Your completed orders will appear here.</div>
+      )}
+    </section>
+  )
 }

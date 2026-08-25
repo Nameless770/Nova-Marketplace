@@ -13,5 +13,26 @@ export function OrderDetailsPage() {
   if (status === 'error') return <ErrorState message={error} onRetry={reload} />
   const order = data?.order
   if (!order) return <div className="empty-state">Order not found.</div>
-  return <section><p className="eyebrow">Order {order.orderNumber}</p><h2>{order.status}</h2><p className="order-total">{order.totalMinor} {order.currency}</p><div className="stack-list">{(data.items || []).map((item) => <article className="line-item" key={item._id}><div><h3>{item.productSnapshot?.title}</h3><span>{item.variantSnapshot?.name} · quantity {item.quantity}</span></div><strong>{item.lineTotalMinor}</strong></article>)}</div></section>
+  return (
+    <section>
+      <p className="eyebrow">Order {order.orderNumber}</p>
+      <h2>{order.status}</h2>
+      <p className="order-total">
+        {order.totalMinor} {order.currency}
+      </p>
+      <div className="stack-list">
+        {(data.items || []).map((item) => (
+          <article className="line-item" key={item._id}>
+            <div>
+              <h3>{item.productSnapshot?.title}</h3>
+              <span>
+                {item.variantSnapshot?.name} · quantity {item.quantity}
+              </span>
+            </div>
+            <strong>{item.lineTotalMinor}</strong>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
 }
