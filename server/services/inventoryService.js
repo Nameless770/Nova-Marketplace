@@ -249,6 +249,77 @@ export async function confirmReservation(userId, reservationKey, command) {
   return changeReservation(userId, reservationKey, command, 'committed')
 }
 
+export async function releaseExpiredReservations({ now = new Date(), limit = 100 } = {}) {
+  const expiredReservations = await InventoryReservation.find({
+    status: 'active',
+    expiresAt: { $lte: now },
+  })
+    .sort({ expiresAt: 1, _id: 1 })
+    .limit(Math.min(Math.max(Number(limit) || 100, 1), 500))
+
+  const summary = { scanned: expiredReservations.length, released: 0, skipped: 0 }
+
+  for (const expiredReservation of expiredReservations) {
+    const session = await mongoose.startSession()
+    try {
+      await session.withTransaction(async () => {
+        const reservation = await InventoryReservation.findOneAndUpdate(
+          {
+            _id: expiredReservation._id,
+            status: 'active',
+            expiresAt: { $lte: now },
+          },
+          { $set: { status: 'expired', releasedAt: now } },
+          { new: true, session },
+        )
+        if (!reservation) {
+          summary.skipped += 1
+          return
+        }
+
+        const inventory = await Inventory.findOneAndUpdate(
+          {
+            _id: reservation.inventoryId,
+            quantityReserved: { $gte: reservation.quantity },
+          },
+          { $inc: { quantityReserved: -reservation.quantity, version: 1 } },
+          { new: true, session },
+        )
+        if (!inventory)
+          throw new AppError(409, 'INVALID_RESERVATION', 'Expired reservation cannot be released')
+
+        const priorHistory = await InventoryHistory.findOne({
+          commandId: `${reservation.reservationKey}:expire`,
+        })
+          .session(session)
+          .lean()
+
+        if (!priorHistory) {
+          await recordHistory(
+            inventory,
+            {
+              commandId: `${reservation.reservationKey}:expire`,
+              type: 'release',
+              quantity: reservation.quantity,
+              reason: 'Reservation expired',
+              reservationId: reservation._id,
+            },
+            session,
+          )
+        } else {
+          refreshState(inventory)
+          await inventory.save({ session })
+        }
+        summary.released += 1
+      })
+    } finally {
+      await session.endSession()
+    }
+  }
+
+  return summary
+}
+
 export async function listInventory(userId, query) {
   const seller = await approvedSeller(userId)
   const filter = { sellerId: seller._id }

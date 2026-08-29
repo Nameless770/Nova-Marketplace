@@ -35,7 +35,11 @@ export async function createCheckoutSession(customerId, orderId, idempotencyKey)
   if (existing) {
     if (existing.orderId.toString() !== orderId)
       throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Idempotency key belongs to another order')
-    return { payment: existing, sessionId: existing.stripeSessionId }
+    return {
+      payment: existing,
+      sessionId: existing.stripeSessionId,
+      url: existing.stripeCheckoutUrl,
+    }
   }
 
   const items = await OrderItem.find({ orderId }).lean()
@@ -62,6 +66,7 @@ export async function createCheckoutSession(customerId, orderId, idempotencyKey)
     orderId,
     customerId,
     stripeSessionId: session.id,
+    stripeCheckoutUrl: session.url,
     stripePaymentIntentId: session.payment_intent ?? undefined,
     amountMinor: order.totalMinor,
     currency: order.currency,
@@ -74,6 +79,19 @@ export async function getPayment(customerId, orderId) {
   const order = await Order.findOne({ _id: orderId, customerId }).select('_id').lean()
   if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found')
   return Payment.findOne({ orderId }).sort({ createdAt: -1 }).lean()
+}
+
+export async function getPaymentByCheckoutSession(customerId, stripeSessionId) {
+  if (!stripeSessionId || stripeSessionId.length > 255)
+    throw new AppError(400, 'INVALID_SESSION_ID', 'Invalid checkout session')
+
+  const payment = await Payment.findOne({ stripeSessionId, customerId }).lean()
+  if (!payment) throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment record not found')
+
+  const order = await Order.findOne({ _id: payment.orderId, customerId }).lean()
+  if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found')
+
+  return { payment, order }
 }
 
 async function finalizeReservations(orderId, action, session) {

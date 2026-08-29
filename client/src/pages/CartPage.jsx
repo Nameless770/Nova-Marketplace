@@ -4,6 +4,7 @@ import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { cartApi } from '../services/api.js'
+import { formatMoney, variantLabel } from '../utils/format.js'
 
 export function CartPage() {
   const load = useCallback(() => cartApi.get(), [])
@@ -49,22 +50,41 @@ export function CartPage() {
       <div className="stack-list">
         {cart.items.map((item) => (
           <article className="line-item" key={item._id}>
+            <Link className="line-item-image" to={`/products/${item.productId}`}>
+              {item.product?.image?.url ? (
+                <img
+                  src={item.product.image.url}
+                  alt={item.product.image.alt || item.product.title}
+                />
+              ) : (
+                <span>No image</span>
+              )}
+            </Link>
             <div>
-              <h3>{item.productId}</h3>
+              <h3>{item.product?.title || 'Unavailable product'}</h3>
               <span>
-                {item.availability} · {item.currentPriceMinor ?? item.unitPriceMinor} minor units
+                {variantLabel(item.variant)} · {item.seller?.storeName || 'Seller unavailable'} ·{' '}
+                {item.availability}
               </span>
+              <strong>
+                {formatMoney(item.currentPriceMinor ?? item.unitPriceMinor, cart.currency)}
+              </strong>
             </div>
             <div className="quantity">
               <button onClick={() => update(item, Math.max(1, item.quantity - 1))}>−</button>
               <strong>{item.quantity}</strong>
               <button onClick={() => update(item, item.quantity + 1)}>+</button>
             </div>
+            <strong>{formatMoney(item.lineSubtotalMinor, cart.currency)}</strong>
             <button className="text-button" onClick={() => remove(item)}>
               Remove
             </button>
           </article>
         ))}
+      </div>
+      <div className="cart-summary">
+        <span>Subtotal</span>
+        <strong>{formatMoney(cart.subtotalMinor, cart.currency)}</strong>
       </div>
       <Link className="primary-action checkout-link" to="/checkout">
         Continue to checkout

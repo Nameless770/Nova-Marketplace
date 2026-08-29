@@ -4,6 +4,7 @@ import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { orderApi } from '../services/api.js'
+import { formatMoney, variantLabel } from '../utils/format.js'
 
 export function OrderDetailsPage() {
   const { orderId } = useParams()
@@ -17,19 +18,17 @@ export function OrderDetailsPage() {
     <section>
       <p className="eyebrow">Order {order.orderNumber}</p>
       <h2>{order.status}</h2>
-      <p className="order-total">
-        {order.totalMinor} {order.currency}
-      </p>
+      <p className="order-total">{formatMoney(order.totalMinor, order.currency)}</p>
       <div className="stack-list">
         {(data.items || []).map((item) => (
           <article className="line-item" key={item._id}>
             <div>
               <h3>{item.productSnapshot?.title}</h3>
               <span>
-                {item.variantSnapshot?.name} · quantity {item.quantity}
+                {variantLabel(item.variantSnapshot)} · Quantity {item.quantity}
               </span>
             </div>
-            <strong>{item.lineTotalMinor}</strong>
+            <strong>{formatMoney(item.lineTotalMinor, order.currency)}</strong>
           </article>
         ))}
       </div>

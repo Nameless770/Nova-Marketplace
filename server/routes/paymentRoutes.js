@@ -1,5 +1,9 @@
 import { Router } from 'express'
-import { checkoutSession, paymentStatus } from '../controllers/paymentController.js'
+import {
+  checkoutSession,
+  checkoutSessionStatus,
+  paymentStatus,
+} from '../controllers/paymentController.js'
 import { authenticate, authorize } from '../middleware/auth.js'
 import { requireIdempotencyKey, validateOrderId } from '../middleware/paymentValidation.js'
 import { asyncHandler } from '../utils/errors.js'
@@ -13,6 +17,7 @@ router.post(
   requireIdempotencyKey,
   asyncHandler(checkoutSession),
 )
+router.get('/checkout-sessions/:sessionId', asyncHandler(checkoutSessionStatus))
 router.get('/orders/:orderId', validateOrderId, asyncHandler(paymentStatus))
 
 export default router

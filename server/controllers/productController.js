@@ -85,14 +85,12 @@ export async function submitSellerProduct(request, response) {
 }
 
 export async function createSellerVariant(request, response) {
-  response
-    .status(201)
-    .json({
-      success: true,
-      data: {
-        variant: await createVariant(request.user._id, request.params.productId, request.body),
-      },
-    })
+  response.status(201).json({
+    success: true,
+    data: {
+      variant: await createVariant(request.user._id, request.params.productId, request.body),
+    },
+  })
 }
 
 export async function updateSellerVariant(request, response) {

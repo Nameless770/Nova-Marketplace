@@ -12,6 +12,8 @@ import { WishlistPage } from './pages/WishlistPage.jsx'
 import { CheckoutPage } from './pages/CheckoutPage.jsx'
 import { OrdersPage } from './pages/OrdersPage.jsx'
 import { OrderDetailsPage } from './pages/OrderDetailsPage.jsx'
+import { PaymentCancelPage } from './pages/PaymentCancelPage.jsx'
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 
 function App() {
@@ -27,6 +29,8 @@ function App() {
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="payment/success" element={<PaymentSuccessPage />} />
+          <Route path="payment/cancelled" element={<PaymentCancelPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="orders/:orderId" element={<OrderDetailsPage />} />
           <Route path="account" element={<ProfilePage />} />

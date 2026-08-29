@@ -8,12 +8,10 @@ export async function validate(request, response) {
 }
 
 export async function createSellerCoupon(request, response) {
-  response
-    .status(201)
-    .json({
-      success: true,
-      data: { coupon: await createCoupon(request.user._id, request.body, 'seller') },
-    })
+  response.status(201).json({
+    success: true,
+    data: { coupon: await createCoupon(request.user._id, request.body, 'seller') },
+  })
 }
 
 export async function sellerCoupons(request, response) {
@@ -24,12 +22,10 @@ export async function sellerCoupons(request, response) {
 }
 
 export async function createPlatformCoupon(request, response) {
-  response
-    .status(201)
-    .json({
-      success: true,
-      data: { coupon: await createCoupon(request.user._id, request.body, 'platform') },
-    })
+  response.status(201).json({
+    success: true,
+    data: { coupon: await createCoupon(request.user._id, request.body, 'platform') },
+  })
 }
 
 export async function platformCoupons(request, response) {

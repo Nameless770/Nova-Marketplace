@@ -42,6 +42,29 @@ async function presentWishlist(wishlist) {
       )
       return {
         ...item.toObject(),
+        product: product
+          ? {
+              id: product._id,
+              title: product.title,
+              brand: product.brand,
+              image: product.images?.[0] ?? null,
+            }
+          : null,
+        variant: variant
+          ? {
+              id: variant._id,
+              name: variant.name,
+              sku: variant.sku,
+              size: variant.size,
+              color: variant.color,
+            }
+          : null,
+        seller: seller
+          ? {
+              id: seller._id,
+              storeName: seller.storeName,
+            }
+          : null,
         availability: available ? 'available' : 'unavailable',
         currentPriceMinor: variant?.currentPriceMinor ?? product?.currentPriceMinor ?? null,
       }

@@ -34,14 +34,38 @@ function lineTotal(unitPriceMinor, quantity) {
   return unitPriceMinor * quantity
 }
 
+async function orderCreationResult(order, idempotentReplay = false, session = null) {
+  const [sellerOrders, items] = await Promise.all([
+    SellerOrder.find({ orderId: order._id }).session(session).lean(),
+    OrderItem.find({ orderId: order._id }).session(session).lean(),
+  ])
+  return { order, sellerOrders, items, idempotentReplay }
+}
+
+async function existingOrderForKey(customerId, idempotencyKey, session = null) {
+  const order = await Order.findOne({ customerId, idempotencyKey }).session(session).lean()
+  return order ? orderCreationResult(order, true, session) : null
+}
+
 export async function createOrderFromCart(
   customerId,
   { shippingAddress, billingAddress, couponCode },
+  idempotencyKey,
 ) {
+  const normalizedIdempotencyKey = idempotencyKey?.trim()
+  if (!normalizedIdempotencyKey || normalizedIdempotencyKey.length > 160) {
+    throw new AppError(400, 'IDEMPOTENCY_KEY_REQUIRED', 'A valid Idempotency-Key is required')
+  }
   const session = await mongoose.startSession()
   try {
     let result
     await session.withTransaction(async () => {
+      const existing = await existingOrderForKey(customerId, normalizedIdempotencyKey, session)
+      if (existing) {
+        result = existing
+        return
+      }
+
       const cart = await Cart.findOne({ userId: customerId }).session(session)
       if (!cart || cart.items.length === 0)
         throw new AppError(409, 'CART_EMPTY', 'Cannot create an order from an empty cart')
@@ -66,8 +90,6 @@ export async function createOrderFromCart(
             .lean())
         if (!product || !variant || !seller)
           throw new AppError(409, 'PRODUCT_UNAVAILABLE', 'A cart item is no longer available')
-        if (variant.currentPriceMinor !== cartItem.unitPriceMinor)
-          throw new AppError(409, 'PRICE_CHANGED', 'A cart item price has changed')
 
         const inventory = await Inventory.findOneAndUpdate(
           {
@@ -118,6 +140,7 @@ export async function createOrderFromCart(
         [
           {
             orderNumber: orderNumber(),
+            idempotencyKey: normalizedIdempotencyKey,
             customerId,
             sellerIds: [...sellerGroups.values()].map((group) => group.seller._id),
             currency: cart.currency,
@@ -237,6 +260,12 @@ export async function createOrderFromCart(
       result = { order, sellerOrders: [...sellerOrders.values()], items: orderItems }
     })
     return result
+  } catch (error) {
+    if (error.code === 11000) {
+      const existing = await existingOrderForKey(customerId, normalizedIdempotencyKey)
+      if (existing) return existing
+    }
+    throw error
   } finally {
     await session.endSession()
   }

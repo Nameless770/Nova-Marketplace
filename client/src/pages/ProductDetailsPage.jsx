@@ -4,6 +4,7 @@ import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { catalogApi, cartApi, wishlistApi } from '../services/api.js'
+import { formatMoney, variantLabel } from '../utils/format.js'
 
 export function ProductDetailsPage() {
   const { productId } = useParams()
@@ -41,7 +42,7 @@ export function ProductDetailsPage() {
         <h2>{product.title}</h2>
         <p>{product.description}</p>
         <strong className="detail-price">
-          {variant?.currentPriceMinor ?? product.currentPriceMinor} <small>minor units</small>
+          {formatMoney(variant?.currentPriceMinor ?? product.currentPriceMinor, product.currency)}
         </strong>
         {variants.length > 0 && (
           <label className="variant-select">
@@ -52,8 +53,7 @@ export function ProductDetailsPage() {
             >
               {variants.map((item) => (
                 <option key={item._id} value={item._id}>
-                  {item.name}{' '}
-                  {item.size || item.color ? `· ${item.size || ''} ${item.color || ''}` : ''}
+                  {variantLabel(item)}
                 </option>
               ))}
             </select>

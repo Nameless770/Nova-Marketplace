@@ -4,6 +4,7 @@ import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { orderApi } from '../services/api.js'
+import { formatMoney } from '../utils/format.js'
 
 export function OrdersPage() {
   const load = useCallback(() => orderApi.list({ limit: 20 }), [])
@@ -23,9 +24,7 @@ export function OrdersPage() {
                 <h3>{order.orderNumber}</h3>
                 <span>{new Date(order.createdAt).toLocaleDateString()}</span>
               </div>
-              <strong>
-                {order.totalMinor} {order.currency}
-              </strong>
+              <strong>{formatMoney(order.totalMinor, order.currency)}</strong>
               <span>{order.status}</span>
             </Link>
           ))}

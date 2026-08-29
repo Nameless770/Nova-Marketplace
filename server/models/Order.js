@@ -17,6 +17,7 @@ const addressSnapshotSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, required: true, unique: true, trim: true },
+    idempotencyKey: { type: String, trim: true, maxlength: 160 },
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     sellerIds: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Seller' }], required: true },
     status: {
@@ -50,6 +51,10 @@ const orderSchema = new mongoose.Schema(
 )
 
 orderSchema.index({ customerId: 1, createdAt: -1, _id: -1 })
+orderSchema.index(
+  { customerId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $exists: true } } },
+)
 orderSchema.index({ sellerIds: 1, createdAt: -1 })
 orderSchema.index({ status: 1, createdAt: -1 })
 

@@ -42,6 +42,7 @@ async function presentCart(cart) {
       const product = await Product.findById(item.productId).lean()
       const variant = await ProductVariant.findById(item.variantId).lean()
       const inventory = await Inventory.findOne({ variantId: item.variantId }).lean()
+      const seller = await Seller.findById(item.sellerId).lean()
       const available = Boolean(
         product?.status === 'active' &&
         variant?.status === 'active' &&
@@ -49,8 +50,34 @@ async function presentCart(cart) {
         inventory.quantityAvailable > 0,
       )
       const currentPriceMinor = variant?.currentPriceMinor
+      const unitPriceMinor = Number.isSafeInteger(currentPriceMinor)
+        ? currentPriceMinor
+        : item.unitPriceMinor
       return {
         ...item.toObject(),
+        product: product
+          ? {
+              id: product._id,
+              title: product.title,
+              brand: product.brand,
+              image: product.images?.[0] ?? null,
+            }
+          : null,
+        variant: variant
+          ? {
+              id: variant._id,
+              name: variant.name,
+              sku: variant.sku,
+              size: variant.size,
+              color: variant.color,
+            }
+          : null,
+        seller: seller
+          ? {
+              id: seller._id,
+              storeName: seller.storeName,
+            }
+          : null,
         availability: available
           ? inventory.quantityAvailable >= item.quantity
             ? 'available'
@@ -59,14 +86,17 @@ async function presentCart(cart) {
         currentPriceMinor: Number.isSafeInteger(currentPriceMinor) ? currentPriceMinor : null,
         priceChanged: available && currentPriceMinor !== item.unitPriceMinor,
         availableQuantity: available ? inventory.quantityAvailable : 0,
+        lineSubtotalMinor: unitPriceMinor * item.quantity,
       }
     }),
   )
+  const subtotalMinor = items.reduce((total, item) => total + item.lineSubtotalMinor, 0)
   return {
     id: cart._id,
     userId: cart.userId,
     currency: cart.currency,
     items,
+    subtotalMinor,
     updatedAt: cart.updatedAt,
   }
 }

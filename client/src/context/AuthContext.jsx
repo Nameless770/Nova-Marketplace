@@ -3,14 +3,34 @@ import { useEffect, useState } from 'react'
 import { authApi, setAccessToken } from '../services/api.js'
 import { AuthContext } from './authContextValue.js'
 
+const tokenStorageKey = 'marketplace.accessToken'
+
+function readStoredToken() {
+  try {
+    return window.sessionStorage.getItem(tokenStorageKey)
+  } catch {
+    return null
+  }
+}
+
+function persistToken(token) {
+  try {
+    if (token) window.sessionStorage.setItem(tokenStorageKey, token)
+    else window.sessionStorage.removeItem(tokenStorageKey)
+  } catch {
+    // Authentication still works for the current render tree if storage is unavailable.
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [token, setToken] = useState(null)
-  const [status, setStatus] = useState('idle')
+  const [token, setToken] = useState(() => readStoredToken())
+  const [status, setStatus] = useState(() => (readStoredToken() ? 'loading' : 'unauthenticated'))
   const [error, setError] = useState(null)
 
   useEffect(() => {
     setAccessToken(token)
+    persistToken(token)
   }, [token])
 
   async function authenticate(action, values) {
@@ -39,7 +59,11 @@ export function AuthProvider({ children }) {
   }
 
   const loadCurrentUser = useCallback(async () => {
-    if (!token) return
+    if (!token) {
+      setUser(null)
+      setStatus('unauthenticated')
+      return
+    }
     setStatus('loading')
     try {
       const response = await authApi.getCurrentUser()
@@ -68,6 +92,7 @@ export function AuthProvider({ children }) {
       setToken(null)
       setUser(null)
       setStatus('unauthenticated')
+      setError(null)
     }
   }
 

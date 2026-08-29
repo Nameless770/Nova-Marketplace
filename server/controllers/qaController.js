@@ -16,28 +16,20 @@ export async function productQuestions(request, response) {
   })
 }
 export async function ask(request, response) {
-  response
-    .status(201)
-    .json({
-      success: true,
-      data: {
-        question: await askQuestion(request.user._id, request.params.productId, request.body.text),
-      },
-    })
+  response.status(201).json({
+    success: true,
+    data: {
+      question: await askQuestion(request.user._id, request.params.productId, request.body.text),
+    },
+  })
 }
 export async function answer(request, response) {
-  response
-    .status(201)
-    .json({
-      success: true,
-      data: {
-        answer: await answerQuestion(
-          request.user._id,
-          request.params.questionId,
-          request.body.text,
-        ),
-      },
-    })
+  response.status(201).json({
+    success: true,
+    data: {
+      answer: await answerQuestion(request.user._id, request.params.questionId, request.body.text),
+    },
+  })
 }
 export async function sellerQuestions(request, response) {
   response.json({ success: true, data: await listSellerQuestions(request.user._id, request.query) })

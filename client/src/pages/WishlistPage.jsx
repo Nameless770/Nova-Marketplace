@@ -4,6 +4,7 @@ import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { wishlistApi } from '../services/api.js'
+import { formatMoney, variantLabel } from '../utils/format.js'
 
 export function WishlistPage() {
   const load = useCallback(() => wishlistApi.get(), [])
@@ -28,11 +29,23 @@ export function WishlistPage() {
       <div className="stack-list">
         {wishlist.items.map((item) => (
           <article className="line-item" key={item._id}>
+            <Link className="line-item-image" to={`/products/${item.productId}`}>
+              {item.product?.image?.url ? (
+                <img
+                  src={item.product.image.url}
+                  alt={item.product.image.alt || item.product.title}
+                />
+              ) : (
+                <span>No image</span>
+              )}
+            </Link>
             <div>
-              <h3>{item.productId}</h3>
+              <h3>{item.product?.title || 'Unavailable product'}</h3>
               <span>
-                {item.availability} · {item.currentPriceMinor ?? 'Price unavailable'} minor units
+                {variantLabel(item.variant)} · {item.seller?.storeName || 'Seller unavailable'} ·{' '}
+                {item.availability}
               </span>
+              <strong>{formatMoney(item.currentPriceMinor, 'USD')}</strong>
             </div>
             <button
               className="text-button"

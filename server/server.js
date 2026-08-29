@@ -7,14 +7,38 @@ const serverDirectory = dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: join(serverDirectory, '.env') })
 
 const { app } = await import('./app.js')
+const { releaseExpiredReservations } = await import('./services/inventoryService.js')
 
 const port = Number(process.env.PORT || 5000)
+const reservationCleanupIntervalMs = Number(
+  process.env.RESERVATION_CLEANUP_INTERVAL_MS || 60 * 1000,
+)
 
 let httpServer
+let reservationCleanupTimer
+let reservationCleanupRunning = false
+
+async function cleanupExpiredReservations() {
+  if (reservationCleanupRunning) return
+  reservationCleanupRunning = true
+  try {
+    const summary = await releaseExpiredReservations()
+    if (summary.released > 0) {
+      console.log(`Released ${summary.released} expired inventory reservation(s)`)
+    }
+  } catch (error) {
+    console.error('Expired reservation cleanup failed:', error.message)
+  } finally {
+    reservationCleanupRunning = false
+  }
+}
 
 async function startServer() {
   try {
     await connectDatabase()
+    await cleanupExpiredReservations()
+    reservationCleanupTimer = setInterval(cleanupExpiredReservations, reservationCleanupIntervalMs)
+    reservationCleanupTimer.unref?.()
     httpServer = app.listen(port, () => {
       console.log(`Marketplace API listening on http://localhost:${port}`)
     })
@@ -27,6 +51,8 @@ async function startServer() {
 
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down`)
+
+  if (reservationCleanupTimer) clearInterval(reservationCleanupTimer)
 
   if (httpServer) {
     await new Promise((resolve, reject) => {

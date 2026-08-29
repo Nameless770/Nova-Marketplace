@@ -54,7 +54,8 @@ export const wishlistApi = {
 export const orderApi = {
   list: (params) => api.get('/orders', { params }),
   get: (orderId) => api.get(`/orders/${orderId}`),
-  create: (details) => api.post('/orders', details),
+  create: (details, idempotencyKey) =>
+    api.post('/orders', details, { headers: { 'Idempotency-Key': idempotencyKey } }),
 }
 
 export const paymentApi = {
@@ -65,6 +66,7 @@ export const paymentApi = {
       { headers: { 'Idempotency-Key': idempotencyKey } },
     ),
   getStatus: (orderId) => api.get(`/payments/orders/${orderId}`),
+  getCheckoutSession: (sessionId) => api.get(`/payments/checkout-sessions/${sessionId}`),
 }
 
 export const profileApi = {

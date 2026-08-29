@@ -8,9 +8,12 @@ import {
 } from '../services/orderService.js'
 
 export async function create(request, response) {
-  response
-    .status(201)
-    .json({ success: true, data: await createOrderFromCart(request.user._id, request.body) })
+  const result = await createOrderFromCart(
+    request.user._id,
+    request.body,
+    request.get('Idempotency-Key'),
+  )
+  response.status(result.idempotentReplay ? 200 : 201).json({ success: true, data: result })
 }
 
 export async function customerOrders(request, response) {

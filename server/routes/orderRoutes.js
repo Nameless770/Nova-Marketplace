@@ -9,12 +9,19 @@ import {
 } from '../controllers/orderController.js'
 import { authenticate, authorize } from '../middleware/auth.js'
 import { validateCreateOrder, validateSellerOrderStatus } from '../middleware/orderValidation.js'
+import { requireIdempotencyKey } from '../middleware/paymentValidation.js'
 import { asyncHandler } from '../utils/errors.js'
 
 const router = Router()
 
 router.use(authenticate)
-router.post('/', authorize('customer'), validateCreateOrder, asyncHandler(create))
+router.post(
+  '/',
+  authorize('customer'),
+  requireIdempotencyKey,
+  validateCreateOrder,
+  asyncHandler(create),
+)
 router.get('/', authorize('customer'), asyncHandler(customerOrders))
 router.get('/seller/list', authorize('seller'), asyncHandler(sellerOrders))
 router.get('/seller/:sellerOrderId', authorize('seller'), asyncHandler(sellerOrder))
