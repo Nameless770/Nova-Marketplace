@@ -5,7 +5,9 @@ export async function connectDatabase() {
   const mongoUri = process.env.MONGODB_URI
 
   if (!mongoUri) {
-    throw new Error('MONGODB_URI is not configured')
+    throw new Error(
+      'MONGODB_URI is not configured. Copy server/.env.example to server/.env and set MONGODB_URI to your MongoDB connection string.',
+    )
   }
 
   const dnsServers = process.env.DNS_SERVERS?.split(',')

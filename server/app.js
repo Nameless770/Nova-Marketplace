@@ -31,6 +31,15 @@ app.post(
 )
 app.use(express.json({ limit: '1mb' }))
 
+app.get('/', (_request, response) => {
+  response.json({
+    success: true,
+    service: 'marketplace-api',
+    frontend: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+    health: '/api/health',
+  })
+})
+
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok', service: 'marketplace-api', timestamp: new Date().toISOString() })
 })
