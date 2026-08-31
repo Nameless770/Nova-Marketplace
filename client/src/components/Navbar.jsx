@@ -14,6 +14,10 @@ export function Navbar() {
         <NavLink to="/categories">Categories</NavLink>
         {user && <NavLink to="/wishlist">Wishlist</NavLink>}
         {user && <NavLink to="/orders">Orders</NavLink>}
+        {user?.role === 'seller' && user.sellerApprovalStatus === 'approved' && (
+          <NavLink to="/seller">Seller centre</NavLink>
+        )}
+        {user?.role === 'admin' && <NavLink to="/admin">Admin</NavLink>}
       </nav>
       <div className="nav-account">
         {user ? (
@@ -30,7 +34,10 @@ export function Navbar() {
             </button>
           </>
         ) : (
-          <Link to="/login">Sign in</Link>
+          <>
+            <Link to="/login">Sign in</Link>
+            <Link to="/register">Create account</Link>
+          </>
         )}
       </div>
     </header>

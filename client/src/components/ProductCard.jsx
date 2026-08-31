@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { formatMoney } from '../utils/format.js'
+import { formatMoney, formatRating } from '../utils/format.js'
 
 export function ProductCard({ product, onAdd }) {
   const image = product.images?.[0]?.url
@@ -20,7 +20,7 @@ export function ProductCard({ product, onAdd }) {
         </Link>
         <div className="product-meta">
           <strong>{formatMoney(price, product.currency)}</strong>
-          <span>{Number(product.ratingAverage || 0).toFixed(1)} / 5</span>
+          <span>{formatRating(product.ratingAverage)} / 5</span>
         </div>
         {onAdd && (
           <button type="button" onClick={() => onAdd(product)}>

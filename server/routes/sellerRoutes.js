@@ -7,6 +7,7 @@ import {
   mySeller,
   orders,
   products,
+  reviews,
   updateSeller,
 } from '../controllers/sellerController.js'
 import { authenticate, authorize } from '../middleware/auth.js'
@@ -28,6 +29,7 @@ router.patch('/me', authorize('seller'), validateStoreUpdate, asyncHandler(updat
 router.get('/dashboard', authorize('seller'), asyncHandler(dashboard))
 router.get('/products', authorize('seller'), asyncHandler(products))
 router.get('/orders', authorize('seller'), asyncHandler(orders))
+router.get('/reviews', authorize('seller'), asyncHandler(reviews))
 router.get('/analytics', authorize('seller'), asyncHandler(analytics))
 
 export default router

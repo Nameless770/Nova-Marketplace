@@ -5,10 +5,11 @@ import {
   getSellerAnalytics,
   getSellerDashboard,
   getSellerOrders,
+  getSellerProducts,
+  getSellerReviews,
   moderateSeller,
   updateMySeller,
 } from '../services/sellerService.js'
-import { searchProducts } from '../services/searchService.js'
 
 export async function createApplication(request, response) {
   const application = await applyAsSeller(request.user._id, request.body)
@@ -33,10 +34,11 @@ export async function dashboard(request, response) {
 }
 
 export async function products(request, response) {
-  response.json({
-    success: true,
-    data: await searchProducts({ ...request.query, sellerId: request.user.sellerId }),
-  })
+  response.json({ success: true, data: await getSellerProducts(request.user._id, request.query) })
+}
+
+export async function reviews(request, response) {
+  response.json({ success: true, data: await getSellerReviews(request.user._id, request.query) })
 }
 
 export async function orders(request, response) {

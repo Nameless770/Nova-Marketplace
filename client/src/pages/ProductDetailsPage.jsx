@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
+import { ProductReviews } from '../components/ProductReviews.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { catalogApi, cartApi, wishlistApi } from '../services/api.js'
 import { formatMoney, variantLabel } from '../utils/format.js'
@@ -10,6 +11,8 @@ export function ProductDetailsPage() {
   const { productId } = useParams()
   const navigate = useNavigate()
   const [selectedVariant, setSelectedVariant] = useState('')
+  const [actionError, setActionError] = useState(null)
+  const [actionPending, setActionPending] = useState(false)
   const load = useCallback(() => catalogApi.getProduct(productId), [productId])
   const { data, status, error, reload } = useApiQuery(load, {})
   if (status === 'loading' || status === 'idle') return <LoadingState label="Loading product" />
@@ -18,15 +21,30 @@ export function ProductDetailsPage() {
   if (!product) return <div className="empty-state">Product not found.</div>
   const variants = product.variants || []
   const variant = variants.find((item) => item._id === selectedVariant) || variants[0]
-  async function addCart() {
+  async function runAction(action, destination) {
     if (!variant) return
-    await cartApi.add({ productId: product._id, variantId: variant._id, quantity: 1 })
-    navigate('/cart')
+    setActionPending(true)
+    setActionError(null)
+    try {
+      await action()
+      navigate(destination)
+    } catch (requestError) {
+      setActionError(requestError.message)
+    } finally {
+      setActionPending(false)
+    }
+  }
+  async function addCart() {
+    await runAction(
+      () => cartApi.add({ productId: product._id, variantId: variant._id, quantity: 1 }),
+      '/cart',
+    )
   }
   async function addWishlist() {
-    if (!variant) return
-    await wishlistApi.add({ productId: product._id, variantId: variant._id })
-    navigate('/wishlist')
+    await runAction(
+      () => wishlistApi.add({ productId: product._id, variantId: variant._id }),
+      '/wishlist',
+    )
   }
   return (
     <section className="detail-layout">
@@ -60,13 +78,15 @@ export function ProductDetailsPage() {
           </label>
         )}
         <div className="action-row">
-          <button className="primary-action" onClick={addCart}>
-            Add to cart
+          <button className="primary-action" onClick={addCart} disabled={actionPending}>
+            {actionPending ? 'Working' : 'Add to cart'}
           </button>
-          <button className="secondary-action" onClick={addWishlist}>
+          <button className="secondary-action" onClick={addWishlist} disabled={actionPending}>
             Save to wishlist
           </button>
         </div>
+        {actionError && <ErrorState message={actionError} />}
+        <ProductReviews productId={product._id} />
       </div>
     </section>
   )

@@ -7,6 +7,11 @@ export function formatMoney(amountMinor, currency = 'USD') {
   }).format(amountMinor / 100)
 }
 
+export function formatRating(rating) {
+  const value = Number(rating?.$numberDecimal ?? rating)
+  return Number.isFinite(value) ? value.toFixed(1) : '0.0'
+}
+
 export function variantLabel(variant) {
   if (!variant) return ''
 

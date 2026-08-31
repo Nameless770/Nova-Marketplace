@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useEffect, useState } from 'react'
-import { authApi, setAccessToken } from '../services/api.js'
+import { authApi, setAccessToken, setUnauthorizedHandler } from '../services/api.js'
 import { AuthContext } from './authContextValue.js'
 
 const tokenStorageKey = 'marketplace.accessToken'
@@ -32,6 +32,17 @@ export function AuthProvider({ children }) {
     setAccessToken(token)
     persistToken(token)
   }, [token])
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setAccessToken(null)
+      setToken(null)
+      setUser(null)
+      setStatus('unauthenticated')
+      setError('Your session expired. Please sign in again.')
+    })
+    return () => setUnauthorizedHandler(null)
+  }, [])
 
   async function authenticate(action, values) {
     setStatus('loading')

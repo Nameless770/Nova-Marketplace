@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -51,6 +51,12 @@ export function LoginPage() {
           Sign in
         </button>
       </form>
+      <p className="auth-alternate">
+        New here?{' '}
+        <Link to="/register" state={location.state}>
+          Create an account
+        </Link>
+      </p>
     </section>
   )
 }
