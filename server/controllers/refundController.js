@@ -9,7 +9,7 @@ export async function create(request, response) {
   const { refund, idempotentReplay } = await createRefund(
     request.user,
     request.params.orderId,
-    request.body,
+    { ...request.body, ip: request.ip },
     request.get('idempotency-key'),
   )
 

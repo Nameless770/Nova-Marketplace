@@ -1,8 +1,10 @@
+import { recordProductView } from '../services/recommendationService.js'
 import {
   createCategory,
   createProduct,
   createVariant,
   getProduct,
+  getSellerProduct,
   listCategories,
   listAdminProducts,
   moderateProduct,
@@ -14,6 +16,7 @@ import {
   updateVariant,
 } from '../services/productService.js'
 import { searchProducts } from '../services/searchService.js'
+import { getSellerProducts } from '../services/sellerService.js'
 
 export async function categories(request, response) {
   response.json({
@@ -47,13 +50,28 @@ export async function categoryProducts(request, response) {
 }
 
 export async function product(request, response) {
-  response.json({ success: true, data: { product: await getProduct(request.params.productId) } })
+  const found = await getProduct(request.params.productId)
+  // Fire-and-forget: view tracking feeds recommendations and must never delay
+  // or fail product browsing.
+  if (request.user) void recordProductView(request.user._id, found)
+  response.json({ success: true, data: { product: found } })
+}
+
+export async function sellerProduct(request, response) {
+  response.json({
+    success: true,
+    data: { product: await getSellerProduct(request.user._id, request.params.productId) },
+  })
 }
 
 export async function sellerProducts(request, response) {
+  // Deliberately not searchProducts: that pins status to 'active', so a seller
+  // could never see their own drafts, and it derives the seller from a
+  // denormalised field that fails open to the whole catalogue when unset.
+  // getSellerProducts resolves the seller from the Seller collection instead.
   response.json({
     success: true,
-    data: await searchProducts({ ...request.query, sellerId: request.user.sellerId }),
+    data: await getSellerProducts(request.user._id, request.query),
   })
 }
 
@@ -115,7 +133,12 @@ export async function removeSellerVariant(request, response) {
 export async function moderate(request, response) {
   response.json({
     success: true,
-    data: { product: await moderateProduct(request.params.productId, request.body.status) },
+    data: {
+      product: await moderateProduct(request.params.productId, request.body.status, {
+        actorId: request.user._id,
+        ip: request.ip,
+      }),
+    },
   })
 }
 

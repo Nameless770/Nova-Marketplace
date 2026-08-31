@@ -1,0 +1,222 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch makes the in-flight run irrelevant. Tags are
+# never cancelled — those produce released artefacts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+# Least privilege by default; the only job that needs more asks for it locally.
+permissions:
+  contents: read
+
+env:
+  # Matches the Dockerfiles, so CI exercises the runtime that actually ships
+  # rather than whatever the runner defaults to.
+  NODE_VERSION: '22'
+  REGISTRY: ghcr.io
+
+jobs:
+  lint:
+    name: Lint and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          # Three workspaces, three lockfiles — all must key the cache or it
+          # goes stale whenever only one of them changes.
+          cache-dependency-path: |
+            package-lock.json
+            client/package-lock.json
+            server/package-lock.json
+
+      # ESLint at the root covers both workspaces, but it needs each workspace's
+      # dependencies present to resolve their imports.
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix client
+          npm ci --prefix server
+
+      - run: npm run lint
+      - run: npm run format:check
+
+  test:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix server
+
+      # The suite spins up a real MongoDB replica set in memory (seven services
+      # use multi-document transactions, which standalone mongod cannot serve).
+      # That means downloading a ~100 MB mongod binary; without this cache every
+      # run pays for it again.
+      - name: Cache MongoDB binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('server/package-lock.json') }}
+          restore-keys: |
+            mongodb-binaries-${{ runner.os }}-
+
+      - name: Run tests
+        working-directory: server
+        env:
+          MONGOMS_DOWNLOAD_DIR: ~/.cache/mongodb-binaries
+          # Left unset deliberately: NODE_ENV=production would make the JWT
+          # strength guard fatal and the suite's fixed test secret would fail.
+          CI: true
+        run: npm test
+
+  build-frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix client
+
+      - name: Build
+        env:
+          # Relative, matching the container setup where nginx proxies /api.
+          VITE_API_URL: /api/v1
+        run: npm run build --prefix client
+
+      - name: Report bundle size
+        run: |
+          echo "### Frontend bundle" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          du -sh client/dist >> "$GITHUB_STEP_SUMMARY"
+          ls -lh client/dist/assets >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: client/dist
+          retention-days: 7
+
+  build-backend:
+    name: Verify backend production install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # There is no transpile step for the backend — it is plain ESM. What can
+      # break is the production install: `npm ci --omit=dev` must resolve and
+      # bcrypt must compile. The test job never exercises that path because it
+      # installs dev dependencies.
+      - name: Production install
+        working-directory: server
+        run: npm ci --omit=dev
+
+      - name: Smoke check that the app boots without dev dependencies
+        working-directory: server
+        env:
+          JWT_SECRET: ci-smoke-check-secret-not-used-for-signing-anything
+        run: node --input-type=module -e "await import('./app.js'); console.log('app module loaded')"
+
+  images:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    # Gated on every check: an image is never published from a commit that
+    # failed lint, tests, or either build.
+    needs: [lint, test, build-frontend, build-backend]
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: ./server
+          - name: frontend
+            context: ./client
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # GITHUB_TOKEN is reached through the secrets context, is scoped to this
+      # single run, and rotates automatically — preferable to storing long-lived
+      # registry credentials. To use Docker Hub instead, swap this step for:
+      #   registry: docker.io
+      #   username: ${{ secrets.DOCKERHUB_USERNAME }}
+      #   password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # and change REGISTRY / IMAGE_NAME accordingly.
+      - name: Log in to the container registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tags and labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # GHCR requires a lowercase path; the owner segment may not be.
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.name }}
+          tags: |
+            type=sha,format=long
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          # Pull requests build the image to prove the Dockerfile still works,
+          # but publish nothing.
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Layer cache shared across runs; scoped per image so the two builds
+          # do not evict each other.
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          build-args: |
+            VITE_API_URL=/api/v1
+
+      - name: Summarise
+        if: github.event_name != 'pull_request'
+        run: |
+          echo "### Published ${{ matrix.name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.meta.outputs.tags }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"

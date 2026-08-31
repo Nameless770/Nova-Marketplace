@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import { ApplicationLayout } from './layouts/ApplicationLayout.jsx'
+import { CustomerRoute } from './layouts/CustomerRoute.jsx'
 import { ProtectedRoute } from './layouts/ProtectedRoute.jsx'
 import { CategoriesPage } from './pages/CategoriesPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
@@ -24,6 +25,7 @@ import { SellerInventoryPage } from './pages/seller/SellerInventoryPage.jsx'
 import { SellerNotificationsPage } from './pages/seller/SellerNotificationsPage.jsx'
 import { SellerOrdersPage } from './pages/seller/SellerOrdersPage.jsx'
 import { SellerOverviewPage } from './pages/seller/SellerOverviewPage.jsx'
+import { SellerProductFormPage } from './pages/seller/SellerProductFormPage.jsx'
 import { SellerProductsPage } from './pages/seller/SellerProductsPage.jsx'
 import { SellerRevenuePage } from './pages/seller/SellerRevenuePage.jsx'
 import { SellerReviewsPage } from './pages/seller/SellerReviewsPage.jsx'
@@ -48,7 +50,7 @@ function App() {
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
-        <Route element={<ProtectedRoute />}>
+        <Route element={<CustomerRoute />}>
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />
@@ -56,6 +58,8 @@ function App() {
           <Route path="payment/cancelled" element={<PaymentCancelPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="orders/:orderId" element={<OrderDetailsPage />} />
+        </Route>
+        <Route element={<ProtectedRoute />}>
           <Route path="account" element={<ProfilePage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
@@ -65,6 +69,8 @@ function App() {
             <Route path="revenue" element={<SellerRevenuePage />} />
             <Route path="orders" element={<SellerOrdersPage />} />
             <Route path="products" element={<SellerProductsPage />} />
+          <Route path="products/new" element={<SellerProductFormPage />} />
+          <Route path="products/:productId" element={<SellerProductFormPage />} />
             <Route path="inventory" element={<SellerInventoryPage />} />
             <Route path="reviews" element={<SellerReviewsPage />} />
             <Route path="store" element={<SellerStorePage />} />

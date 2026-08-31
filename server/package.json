@@ -7,9 +7,12 @@
     "dev": "node --watch server.js",
     "lint": "eslint .",
     "start": "node server.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed": "node scripts/seed.js",
+    "seed:large": "node scripts/seed-large.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",

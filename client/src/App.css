@@ -1,14 +1,99 @@
 :root {
-  --ink: #19332d;
-  --muted: #63716c;
-  --paper: #f3efe6;
-  --panel: #fffaf1;
-  --line: #c9d0c7;
-  --coral: #b4533d;
-  --gold: #e7b35c;
-  font-family: Arial, sans-serif;
+  /* ---- Brand ------------------------------------------------------------ */
+  --primary: #cc785c;
+  --primary-active: #a9583e;
+  --primary-disabled: #e6dfd8;
+  --accent-teal: #5db8a6;
+  --accent-amber: #e8a55a;
+
+  /* ---- Text ------------------------------------------------------------- */
+  --ink: #141413;
+  --body-strong: #252523;
+  --body: #3d3d3a;
+  --muted: #6c6a64;
+  --muted-soft: #8e8b82;
+  --on-primary: #ffffff;
+  --on-dark: #faf9f5;
+  --on-dark-soft: #a09d96;
+
+  /* ---- Surface ---------------------------------------------------------- */
+  --canvas: #faf9f5;
+  --surface-soft: #f5f0e8;
+  --surface-card: #efe9de;
+  --surface-cream-strong: #e8e0d2;
+  --surface-dark: #181715;
+  --surface-dark-elevated: #252320;
+  --surface-dark-soft: #1f1e1b;
+  --hairline: #e6dfd8;
+  --hairline-soft: #ebe6df;
+
+  /* ---- Semantic --------------------------------------------------------- */
+  --success: #5db872;
+  --warning: #d4a017;
+  --error: #c64545;
+
+  /* ---- Type ------------------------------------------------------------- */
+  --font-display: 'Cormorant Garamond', 'EB Garamond', Garamond, 'Times New Roman', serif;
+  --font-body: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 9999px;
+
+  /* ---- Spacing (4px base) ----------------------------------------------- */
+  --s-xxs: 4px;
+  --s-xs: 8px;
+  --s-sm: 12px;
+  --s-md: 16px;
+  --s-lg: 24px;
+  --s-xl: 32px;
+  --s-xxl: 48px;
+  --s-section: 96px;
+
+  /* ---- Legacy aliases ---------------------------------------------------
+     The rest of this stylesheet was written against these names. Remapping
+     them here moves the whole app onto the new palette in one place, rather
+     than a thousand find-and-replaces that would be easy to get half-right. */
+  --paper: var(--canvas);
+  --panel: var(--canvas);
+  --line: var(--hairline);
+  --coral: var(--primary);
+  --gold: var(--accent-amber);
+
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--body);
+  background: var(--canvas);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Display type is serif at regular weight with negative tracking. Bolding it
+   reads as bombastic and off-brand; the serif character is the brand voice. */
+h1,
+h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.02em;
   color: var(--ink);
-  background: var(--paper);
+  text-wrap: balance;
+}
+
+/* h3 is a card/section title, not display type — the system puts those on the
+   humanist sans (title-md). Serif here would flatten the display/title split
+   that gives the hierarchy its editorial voice. */
+h3 {
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--ink);
 }
 
 * {
@@ -37,19 +122,35 @@ button {
 .navbar {
   display: flex;
   align-items: center;
-  gap: 2rem;
-  min-height: 76px;
-  padding: 0 5vw;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
+  gap: var(--s-xl);
+  min-height: 64px;
+  padding: 0 var(--s-xl);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--canvas);
 }
+/* The wordmark carries the display serif and is prefixed by the radial mark. */
 .brand {
-  color: var(--coral);
-  font-family: Georgia, serif;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-xs);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-decoration: none;
   white-space: nowrap;
+}
+.brand::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  flex: none;
+  background: var(--ink);
+  clip-path: polygon(
+    50% 0%, 58% 38%, 93% 22%, 66% 50%, 93% 78%, 58% 62%,
+    50% 100%, 42% 62%, 7% 78%, 34% 50%, 7% 22%, 42% 38%
+  );
 }
 .navbar nav {
   display: flex;
@@ -58,6 +159,8 @@ button {
 }
 .navbar nav a {
   color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
   text-decoration: none;
 }
 .navbar nav a.active {
@@ -80,10 +183,10 @@ button {
   text-decoration: none;
 }
 .page-content {
-  width: min(1120px, 100%);
+  width: min(1200px, 100%);
   flex: 1;
   margin: 0 auto;
-  padding: clamp(2rem, 6vw, 5rem);
+  padding: clamp(var(--s-xl), 6vw, var(--s-section)) var(--s-xl);
 }
 .hero-panel {
   max-width: 780px;
@@ -92,38 +195,53 @@ button {
 .hero-panel h1,
 h2 {
   margin: 0;
-  font-family: Georgia, serif;
-  font-weight: 400;
-  letter-spacing: 0;
 }
 .hero-panel h1 {
-  max-width: 10ch;
-  font-size: clamp(3rem, 8vw, 6.5rem);
-  line-height: 0.94;
+  max-width: 16ch;
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 .hero-panel p:not(.eyebrow) {
   max-width: 36rem;
-  margin: 2rem 0;
-  color: var(--muted);
-  font-size: 1.1rem;
-  line-height: 1.6;
+  margin: var(--s-lg) 0 var(--s-xl);
+  color: var(--body);
+  font-size: 1.125rem;
+  line-height: 1.55;
 }
+/* caption-uppercase, in muted rather than coral: the accent stays scarce so
+   primary CTAs and full-bleed coral moments keep their voltage. */
 .eyebrow {
-  margin: 0 0 1rem;
-  color: var(--coral);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  margin: 0 0 var(--s-sm);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 .primary-action {
-  display: inline-block;
-  padding: 0.85rem 1.1rem;
-  border: 1px solid var(--ink);
-  background: var(--ink);
-  color: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
   text-decoration: none;
-  font-weight: 700;
+}
+.primary-action:active {
+  background: var(--primary-active);
+}
+.primary-action:disabled {
+  background: var(--primary-disabled);
+  color: var(--muted);
+  cursor: not-allowed;
 }
 .section-heading {
   display: flex;
@@ -140,12 +258,12 @@ h2 {
   color: var(--muted);
   font-size: 0.9rem;
 }
+/* Discrete rounded cards on canvas: depth comes from cream-on-cream surface
+   contrast, not from ink grid lines. */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 1px;
-  border: 1px solid var(--line);
-  background: var(--line);
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--s-lg);
 }
 .search-tools {
   display: grid;
@@ -156,20 +274,29 @@ h2 {
 .search-tools input,
 .search-tools select {
   min-width: 0;
-  padding: 0.8rem;
-  border: 1px solid var(--line);
-  background: var(--panel);
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--canvas);
   color: var(--ink);
+  font-size: 16px;
 }
 .product-card {
-  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface-card);
 }
 .product-image {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  background: #e2e5dc;
-  color: var(--muted);
+  background: var(--surface-cream-strong);
+  color: var(--muted-soft);
+  font-size: 13px;
   text-decoration: none;
   overflow: hidden;
 }
@@ -180,23 +307,26 @@ h2 {
   object-fit: cover;
 }
 .product-card-body {
-  padding: 1rem;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--s-lg);
 }
 .product-card-body a {
   text-decoration: none;
 }
 .product-card h3 {
-  min-height: 2.7em;
-  margin: 0.45rem 0 1.2rem;
-  font-family: Georgia, serif;
-  font-size: 1.1rem;
-  font-weight: 400;
+  min-height: 2.8em;
+  margin: var(--s-xs) 0 var(--s-md);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
 }
 .product-brand {
-  color: var(--coral);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 .product-meta {
@@ -213,12 +343,16 @@ h2 {
 .product-card button,
 .load-more,
 .secondary-action {
-  margin-top: 1rem;
-  padding: 0.65rem 0.8rem;
-  border: 1px solid var(--ink);
-  background: transparent;
+  margin-top: var(--s-md);
+  min-height: 40px;
+  padding: 12px 20px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--canvas);
   color: var(--ink);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
 }
 .load-more {
   display: block;
@@ -323,8 +457,9 @@ h2 {
 .text-button {
   border: 0;
   background: transparent;
-  color: var(--coral);
-  font-weight: 700;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 500;
 }
 .order-link {
   color: inherit;
@@ -458,6 +593,110 @@ h2 {
   font-size: 0.85rem;
   margin-top: 0.5rem;
 }
+.category-picker {
+  border: 1px solid var(--line);
+  padding: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.category-picker legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0 0.4rem;
+}
+.variant-manager {
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+}
+
+/* Recommendation shelves */
+.rec-shelf {
+  margin: 3rem 0;
+}
+.shelf-head {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+.shelf-head h3 {
+  margin: 0;
+}
+.shelf-note,
+.shelf-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.shelf-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.shelf-card {
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+.shelf-image {
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+.shelf-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.shelf-body {
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.shelf-title {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+.shelf-title:hover {
+  color: var(--coral);
+}
+.shelf-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.reason-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+.reason {
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--coral);
+  line-height: 1.35;
+}
+
 /* Admin dashboard */
 .admin-subtle {
   color: var(--muted);
@@ -965,14 +1204,19 @@ h2 {
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+/* The footer closes every page on the dark surface and never inverts. */
 .footer {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1.5rem 5vw;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.8rem;
+  gap: var(--s-md);
+  padding: var(--s-xxl) var(--s-xl);
+  background: var(--surface-dark);
+  color: var(--on-dark-soft);
+  font-size: 14px;
+}
+.footer strong,
+.footer a {
+  color: var(--on-dark);
 }
 @keyframes spin {
   to {
@@ -1019,4 +1263,212 @@ h2 {
   .success-message {
     grid-column: span 1;
   }
+}
+
+
+/* ---------------------------------------------------------------------------
+   Design system: shared control + surface treatment.
+   Kept at the end so token-level changes apply to controls declared earlier
+   without having to restate each rule's own layout.
+   --------------------------------------------------------------------------- */
+
+input,
+select,
+textarea {
+  font-family: var(--font-body);
+  border-radius: var(--r-md);
+  border-color: var(--hairline);
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+/* text-input-focused: the border shifts to coral with a soft outer ring. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(204, 120, 92, 0.15);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Cards and panels sit on the cream card surface with a 12px radius. */
+.auth-panel,
+.state-panel,
+.empty-state,
+.rec-shelf .shelf-grid,
+.notification-list,
+.scroll,
+.stat-grid,
+.phases,
+.order-card,
+.summary-card {
+  border-radius: var(--r-lg);
+}
+
+.stat-card,
+.shelf-card,
+.notification,
+.seller-table,
+.dialog {
+  background: var(--canvas);
+}
+
+.stat-grid {
+  overflow: hidden;
+  border-color: var(--hairline);
+  background: var(--hairline);
+}
+
+/* Badges take the pill radius. */
+.pill,
+.badge,
+.review-verified {
+  border-radius: var(--r-pill);
+}
+
+.pill {
+  padding: 4px 12px;
+  border-color: var(--hairline);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: capitalize;
+}
+
+/* Semantic pills keep their meaning but move onto the system palette. */
+.pill-cancelled,
+.pill-refunded,
+.pill-out_of_stock,
+.pill-suspended,
+.pill-rejected,
+.pill-failed {
+  border-color: var(--error);
+  background: transparent;
+  color: var(--error);
+}
+.pill-active,
+.pill-approved,
+.pill-paid,
+.pill-published,
+.pill-delivered {
+  border-color: var(--success);
+  background: transparent;
+  color: #3f8a51;
+}
+.pill-pending,
+.pill-pending_review,
+.pill-draft,
+.pill-processing,
+.pill-partially_refunded {
+  border-color: var(--warning);
+  background: transparent;
+  color: #9a7611;
+}
+
+/* Tables read as data, so they use the sans and a tabular figure set. */
+.seller-table {
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.seller-table th {
+  font-family: var(--font-body);
+  color: var(--muted);
+  background: var(--surface-soft);
+  border-color: var(--hairline);
+}
+.seller-table td {
+  border-color: var(--hairline-soft);
+  color: var(--body);
+}
+
+/* Dashboard rails and dialogs. */
+.seller-nav a.active {
+  border-left-color: var(--primary);
+  background: var(--surface-card);
+}
+.dialog {
+  border-radius: var(--r-lg);
+  border-color: var(--hairline);
+  padding: var(--s-xl);
+}
+.dialog-backdrop {
+  background: rgba(20, 20, 19, 0.45);
+}
+
+/* Recommendation shelves adopt the card surface. */
+.shelf-grid {
+  gap: var(--s-lg);
+  border: 0;
+  background: transparent;
+}
+.shelf-card {
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface-card);
+}
+.shelf-image {
+  background: var(--surface-cream-strong);
+}
+.reason {
+  border-left-color: var(--primary);
+  color: var(--muted);
+}
+
+/* Error and loading states. */
+.error-panel {
+  color: var(--error);
+}
+.spinner {
+  border-color: var(--hairline);
+  border-top-color: var(--primary);
+}
+
+/* Section rhythm between major bands. */
+.rec-shelf,
+.review-section {
+  margin-top: var(--s-section);
+}
+
+/* Auth and form panels sit on the cream card surface. */
+.auth-panel {
+  padding: var(--s-xl);
+  border: 1px solid var(--hairline);
+  background: var(--surface-card);
+}
+.auth-panel input,
+.seller-form input,
+.seller-form textarea,
+.dialog textarea,
+.dialog input,
+.table-search,
+.table-filter select,
+.inline-form input {
+  min-height: 40px;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--canvas);
+}
+.seller-form textarea,
+.dialog textarea {
+  min-height: auto;
+}
+
+/* Explains a role limitation inline where an action would otherwise sit. */
+.role-note {
+  max-width: 46ch;
+  margin: var(--s-md) 0 0;
+  padding: var(--s-md);
+  border-left: 2px solid var(--hairline);
+  color: var(--muted);
+  font-size: 14px;
 }

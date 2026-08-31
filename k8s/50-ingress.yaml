@@ -1,0 +1,62 @@
+# The single entry point from outside the cluster. Both Services are ClusterIP,
+# so this is the only route in.
+#
+# Path routing happens here rather than in the frontend's nginx: /api goes
+# straight to the backend Service, saving a hop through the frontend pods. The
+# frontend image still contains an /api proxy — that is what makes the same
+# image work under plain Docker Compose, and it is simply unused here.
+#
+# Because both paths are served from one hostname, the browser sees a single
+# origin and CORS never enters the picture.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: marketplace
+  namespace: marketplace
+  labels:
+    app.kubernetes.io/name: marketplace
+  annotations:
+    # Uploaded review images and AI request bodies are small, but the default
+    # 1MB limit is easy to hit; the API itself caps JSON at 1MB.
+    nginx.ingress.kubernetes.io/proxy-body-size: '2m'
+    # AI endpoints can legitimately take a while — the admin assistant runs a
+    # multi-step tool loop. The default 60s read timeout would cut those off.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: '120'
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: '10'
+    # The API rate-limits per IP, so it must see the real client address rather
+    # than the ingress controller's.
+    nginx.ingress.kubernetes.io/use-forwarded-headers: 'true'
+    nginx.ingress.kubernetes.io/force-ssl-redirect: 'true'
+    # Uncomment once cert-manager is installed to have TLS issued and renewed
+    # automatically for the host below.
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - marketplace.example.com
+      # The certificate itself is a Secret created by cert-manager or by hand;
+      # it is never checked into the repository.
+      secretName: marketplace-tls
+  rules:
+    - host: marketplace.example.com
+      http:
+        paths:
+          # More specific path first. Ingress matches by longest prefix, but
+          # ordering keeps the intent obvious to a reader.
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 5000
+          # Everything else is the SPA. Unknown paths reach index.html and React
+          # Router resolves them client-side.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

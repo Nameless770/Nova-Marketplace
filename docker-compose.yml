@@ -1,0 +1,102 @@
+# Marketplace stack: nginx-served SPA, Express API, MongoDB replica set.
+#
+# Only the frontend publishes a port. The API and the database are reachable
+# solely on the internal network, so neither has a public surface.
+#
+#   cp .env.docker.example .env && docker compose up --build
+
+name: marketplace
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    # A replica set is REQUIRED, not a preference: seven services use
+    # multi-document transactions, which standalone mongod does not support.
+    # Without this, checkout, refunds and inventory fail at runtime while the
+    # container still looks healthy.
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - marketplace
+    # The check doubles as one-time initialisation: rs.status() throws until the
+    # set exists, and the catch initiates it. Once initiated it simply reports
+    # health on every subsequent run.
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "
+          try { rs.status().ok }
+          catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }
+        "
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    # Waits for a genuinely initialised replica set, not merely a running
+    # process — otherwise the first transaction races the set coming up.
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongo:27017/marketplace?replicaSet=rs0
+      # Required in production; the app refuses to boot without it.
+      CLIENT_ORIGIN: '${PUBLIC_ORIGIN:-http://localhost:8080}'
+      JWT_SECRET: '${JWT_SECRET:?set JWT_SECRET in .env — generate with openssl rand -base64 48}'
+      JWT_EXPIRES_IN: '${JWT_EXPIRES_IN:-15m}'
+      STRIPE_SECRET_KEY: '${STRIPE_SECRET_KEY:-}'
+      STRIPE_WEBHOOK_SECRET: '${STRIPE_WEBHOOK_SECRET:-}'
+      PAYMENT_SUCCESS_URL: '${PUBLIC_ORIGIN:-http://localhost:8080}/payment/success?session_id={CHECKOUT_SESSION_ID}'
+      PAYMENT_CANCEL_URL: '${PUBLIC_ORIGIN:-http://localhost:8080}/payment/cancelled'
+      ANTHROPIC_API_KEY: '${ANTHROPIC_API_KEY:-}'
+      AI_MODEL: '${AI_MODEL:-}'
+    # Deliberately no `ports:` — the API is reached only through nginx.
+    expose:
+      - '5000'
+    networks:
+      - marketplace
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        # Relative, so the built bundle carries no environment-specific host.
+        VITE_API_URL: /api/v1
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - '${PUBLIC_PORT:-8080}:8080'
+    networks:
+      - marketplace
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+networks:
+  marketplace:
+    driver: bridge
+
+volumes:
+  # Named volume so database contents survive `docker compose down`.
+  # Removing it requires the explicit `-v` flag.
+  mongo-data:

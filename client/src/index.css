@@ -1,3 +1,5 @@
+/* The canvas tint is the brand's defining choice — pure white reads as any
+   other AI product. Set here so the page floor is correct before App.css loads. */
 html {
-  background: #f3efe6;
+  background: #faf9f5;
 }

@@ -1,0 +1,36 @@
+# Non-secret configuration only. Anything here is readable by anyone with `get
+# configmap` in the namespace, so connection strings, keys and tokens belong in
+# the Secret instead.
+#
+# Changing a ConfigMap does not restart pods on its own — env vars are read once
+# at container start. After editing, roll the deployment:
+#   kubectl -n marketplace rollout restart deployment/backend
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: marketplace
+  labels:
+    app.kubernetes.io/name: marketplace
+    app.kubernetes.io/component: backend
+data:
+  NODE_ENV: 'production'
+  PORT: '5000'
+
+  # Required in production — the API refuses to start without it. Must match the
+  # public origin the browser actually uses, since it drives CORS.
+  CLIENT_ORIGIN: 'https://marketplace.example.com'
+
+  JWT_EXPIRES_IN: '15m'
+
+  # How often each replica sweeps expired inventory reservations. See the note
+  # in 30-backend.yaml: this job runs on every replica.
+  RESERVATION_CLEANUP_INTERVAL_MS: '60000'
+
+  PAYMENT_SUCCESS_URL: 'https://marketplace.example.com/payment/success?session_id={CHECKOUT_SESSION_ID}'
+  PAYMENT_CANCEL_URL: 'https://marketplace.example.com/payment/cancelled'
+
+  # Optional. Left blank, the AI routes degrade rather than fail: natural
+  # language search falls back to plain text search and the assistants return
+  # 503. Only the model name is config; the API key is a Secret.
+  AI_MODEL: ''

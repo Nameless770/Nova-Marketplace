@@ -4,6 +4,7 @@ import { OrderItem } from '../models/OrderItem.js'
 import { Product } from '../models/Product.js'
 import { Review } from '../models/Review.js'
 import { AppError } from '../utils/errors.js'
+import { AUDIT, recordAudit } from './auditService.js'
 
 function validId(value, code, message) {
   if (!mongoose.isValidObjectId(value)) throw new AppError(404, code, message)
@@ -58,7 +59,14 @@ export async function createReview(customerId, productId, { rating, title, text,
   if (!product) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found')
   const orderItem = await OrderItem.findOne({
     productId,
-    orderId: { $in: await Order.find({ customerId, paymentStatus: 'paid' }).distinct('_id') },
+    // A partially refunded order is still a completed purchase. A fully
+    // refunded one is not — the customer has their money back.
+    orderId: {
+      $in: await Order.find({
+        customerId,
+        paymentStatus: { $in: ['paid', 'partially_refunded'] },
+      }).distinct('_id'),
+    },
   })
     .sort({ createdAt: -1 })
     .lean()
@@ -148,7 +156,7 @@ export async function listReviewsForModeration(query) {
     .lean()
 }
 
-export async function moderateReview(reviewId, status, reason) {
+export async function moderateReview(reviewId, status, reason, context = {}) {
   validId(reviewId, 'REVIEW_NOT_FOUND', 'Review not found')
   const session = await mongoose.startSession()
   try {
@@ -156,6 +164,20 @@ export async function moderateReview(reviewId, status, reason) {
     await session.withTransaction(async () => {
       review = await Review.findById(reviewId).session(session)
       if (!review) throw new AppError(404, 'REVIEW_NOT_FOUND', 'Review not found')
+      await recordAudit(
+        {
+          actorId: context.actorId,
+          actorRole: 'admin',
+          action: AUDIT.REVIEW_MODERATED,
+          targetType: 'Review',
+          targetId: review._id,
+          before: { status: review.status },
+          after: { status },
+          reason,
+          ip: context.ip,
+        },
+        session,
+      )
       review.status = status
       review.moderationReason = ['rejected', 'removed'].includes(status) ? reason : undefined
       review.verifiedPurchase = true

@@ -91,6 +91,9 @@ export async function createCatalogItem(overrides = {}) {
       $set: {
         minPriceMinor: variant.currentPriceMinor,
         maxPriceMinor: variant.currentPriceMinor,
+        // Mirrors what createVariant does, so search price filters behave in
+        // tests the way they do in the running app.
+        currentPriceMinor: variant.currentPriceMinor,
       },
     },
   )

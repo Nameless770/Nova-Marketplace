@@ -1,0 +1,13 @@
+# Everything lives in one namespace so the whole stack can be granted quotas,
+# network policies and RBAC as a unit, and torn down with a single delete.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: marketplace
+  labels:
+    app.kubernetes.io/name: marketplace
+    # Enforces the restricted Pod Security Standard: no privileged containers,
+    # no host namespaces, no privilege escalation. Workloads that violate it are
+    # rejected at admission rather than failing mysteriously later.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest

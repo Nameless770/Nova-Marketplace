@@ -19,6 +19,11 @@ export function SellerProductsPage() {
     <section>
       <p className="eyebrow">Products</p>
       <h2>Your catalogue</h2>
+      <div className="seller-toolbar">
+        <Link className="primary-action" to="/seller/products/new">
+          New product
+        </Link>
+      </div>
 
       {products.length === 0 ? (
         <p className="seller-subtle">You have not created any products yet.</p>
@@ -30,6 +35,7 @@ export function SellerProductsPage() {
               <th>Price</th>
               <th>Rating</th>
               <th>Status</th>
+              <th>Manage</th>
             </tr>
           </thead>
           <tbody>
@@ -46,6 +52,11 @@ export function SellerProductsPage() {
                 </td>
                 <td>
                   <span className={`pill pill-${product.status}`}>{product.status}</span>
+                </td>
+                <td>
+                  <Link className="text-button" to={`/seller/products/${product._id}`}>
+                    Edit
+                  </Link>
                 </td>
               </tr>
             ))}

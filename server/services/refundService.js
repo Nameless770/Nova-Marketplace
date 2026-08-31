@@ -9,6 +9,7 @@ import { Refund } from '../models/Refund.js'
 import { Seller } from '../models/Seller.js'
 import { SellerOrder } from '../models/SellerOrder.js'
 import { AppError } from '../utils/errors.js'
+import { AUDIT, recordAudit } from './auditService.js'
 
 function stripeClient() {
   if (!process.env.STRIPE_SECRET_KEY)
@@ -287,6 +288,26 @@ export async function createRefund(user, orderId, input, idempotencyKey) {
         ],
         { session },
       )
+      // Money movement is the action most worth being able to reconstruct later.
+      await recordAudit(
+        {
+          actorId: user._id,
+          actorRole: user.role === 'admin' ? 'admin' : 'seller',
+          action: AUDIT.REFUND_CREATED,
+          targetType: 'Order',
+          targetId: order._id,
+          after: {
+            refundNumber: refund.refundNumber,
+            amountMinor,
+            currency: order.currency,
+            restock: Boolean(input.restock),
+          },
+          reason: input.reason.trim(),
+          ip: input.ip,
+        },
+        session,
+      )
+
       created = refund.toObject()
     })
     return { refund: created, idempotentReplay: false }

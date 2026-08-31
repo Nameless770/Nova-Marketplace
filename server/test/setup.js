@@ -16,6 +16,11 @@ beforeAll(async () => {
   replicaSet = await MongoMemoryReplSet.create({ replSet: { count: 1 } })
   await mongoose.connect(replicaSet.getUri())
   await mongoose.connection.db.admin().command({ ping: 1 })
+
+  // Mongoose builds indexes in the background, so a query issued immediately
+  // after connecting can race them — $text in particular fails outright without
+  // its index. Awaiting init() makes tests match a running app that has them.
+  await Promise.all(Object.values(mongoose.models).map((model) => model.init()))
 })
 
 afterEach(async () => {

@@ -18,6 +18,7 @@ import {
 } from '../controllers/qaController.js'
 import { validateModeration } from '../middleware/qaValidation.js'
 import {
+  auditLogs,
   categories as adminCategories,
   coupons as adminCoupons,
   couponStatus,
@@ -42,6 +43,7 @@ const router = Router()
 router.use(authenticate, authorize('admin'))
 
 router.get('/overview', asyncHandler(overview))
+router.get('/audit-logs', asyncHandler(auditLogs))
 router.get('/users', asyncHandler(adminUsers))
 router.patch('/users/:userId/status', validateUserStatus, asyncHandler(userStatus))
 router.get('/orders', asyncHandler(adminOrders))

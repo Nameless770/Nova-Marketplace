@@ -4,6 +4,7 @@ import { Product } from '../models/Product.js'
 import { ProductVariant } from '../models/ProductVariant.js'
 import { Seller } from '../models/Seller.js'
 import { AppError } from '../utils/errors.js'
+import { AUDIT, recordAudit } from './auditService.js'
 
 function slugify(value) {
   return value
@@ -113,6 +114,24 @@ export async function getProduct(productId, includeInactive = false) {
   return publicProduct(product, variants)
 }
 
+/**
+ * A seller's own product, whatever its status.
+ *
+ * The public getProduct only returns active products, so without this a seller
+ * cannot see the draft they just created. Ownership is enforced by ownedProduct,
+ * so this can never reach another seller's catalogue.
+ */
+export async function getSellerProduct(userId, productId) {
+  if (!mongoose.isValidObjectId(productId))
+    throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found')
+  const product = await ownedProduct(userId, productId)
+  const variants = await ProductVariant.find({
+    productId,
+    status: { $ne: 'removed' },
+  }).lean()
+  return publicProduct(product.toObject(), variants)
+}
+
 export async function createProduct(userId, data) {
   const seller = await ownedSeller(userId)
   await ensureCategories(data.categoryIds)
@@ -176,12 +195,17 @@ export async function createVariant(userId, productId, data) {
   const prices = await ProductVariant.find({ productId, status: 'active' })
     .select('currentPriceMinor')
     .lean()
+  const minPriceMinor = Math.min(...prices.map((item) => item.currentPriceMinor))
   await Product.updateOne(
     { _id: productId },
     {
       $set: {
-        minPriceMinor: Math.min(...prices.map((item) => item.currentPriceMinor)),
+        minPriceMinor,
         maxPriceMinor: Math.max(...prices.map((item) => item.currentPriceMinor)),
+        // Search filters and sorts price on currentPriceMinor. Without this a
+        // variant product has no value in that field, so every price-range
+        // query silently excluded it.
+        currentPriceMinor: minPriceMinor,
       },
     },
   )
@@ -225,11 +249,24 @@ export async function removeVariant(userId, productId, variantId) {
   await variant.save()
 }
 
-export async function moderateProduct(productId, status) {
+export async function moderateProduct(productId, status, context = {}) {
   const product = await Product.findById(productId)
   if (!product) throw new AppError(404, 'PRODUCT_NOT_FOUND', 'Product not found')
+  const previousStatus = product.status
   product.status = status
   await product.save()
+
+  await recordAudit({
+    actorId: context.actorId,
+    actorRole: 'admin',
+    action: AUDIT.PRODUCT_MODERATED,
+    targetType: 'Product',
+    targetId: product._id,
+    before: { status: previousStatus },
+    after: { status },
+    ip: context.ip,
+  })
+
   return product
 }
 

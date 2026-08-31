@@ -9,6 +9,7 @@ import { Review } from '../models/Review.js'
 import { Seller } from '../models/Seller.js'
 import { User } from '../models/User.js'
 import { AppError } from '../utils/errors.js'
+import { AUDIT, recordAudit } from './auditService.js'
 
 const MAX_RANGE_DAYS = 365
 const DEFAULT_RANGE_DAYS = 30
@@ -194,6 +195,51 @@ export async function getPlatformOverview(query = {}) {
   }
 }
 
+/**
+ * Best-selling products across the whole platform for a bounded period.
+ * Counts only orders Stripe confirmed as paid.
+ */
+export async function getTopProducts(query = {}) {
+  const range = resolveRange(query)
+  const limit = Math.min(Math.max(Number(query.limit) || 5, 1), 20)
+
+  const rows = await OrderItem.aggregate([
+    { $match: { createdAt: { $gte: range.from, $lte: range.to } } },
+    {
+      $lookup: {
+        from: Order.collection.name,
+        localField: 'orderId',
+        foreignField: '_id',
+        as: 'order',
+      },
+    },
+    { $unwind: '$order' },
+    { $match: { 'order.paymentStatus': { $in: ['paid', 'partially_refunded'] } } },
+    {
+      $group: {
+        _id: '$productId',
+        title: { $first: '$productSnapshot.title' },
+        unitsSold: { $sum: '$quantity' },
+        revenueMinor: { $sum: '$lineTotalMinor' },
+        orders: { $addToSet: '$orderId' },
+      },
+    },
+    {
+      $project: {
+        productId: '$_id',
+        title: 1,
+        unitsSold: 1,
+        revenueMinor: 1,
+        orderCount: { $size: '$orders' },
+      },
+    },
+    { $sort: { unitsSold: -1, revenueMinor: -1 } },
+    { $limit: limit },
+  ])
+
+  return { period: { from: range.from, to: range.to }, items: rows }
+}
+
 export async function listPlatformUsers(query) {
   const page = paginate(query)
   const filter = {}
@@ -216,7 +262,7 @@ export async function listPlatformUsers(query) {
   return { items, meta: meta(page, total) }
 }
 
-export async function setUserStatus(adminUserId, userId, status) {
+export async function setUserStatus(adminUserId, userId, status, context = {}) {
   if (!mongoose.isValidObjectId(userId))
     throw new AppError(404, 'USER_NOT_FOUND', 'User not found')
   if (!['active', 'suspended'].includes(status))
@@ -230,8 +276,21 @@ export async function setUserStatus(adminUserId, userId, status) {
   if (user.role === 'admin')
     throw new AppError(403, 'ADMIN_IMMUTABLE', 'Admin accounts cannot be suspended here')
 
+  const previousStatus = user.status
   user.status = status
   await user.save()
+
+  await recordAudit({
+    actorId: adminUserId,
+    actorRole: 'admin',
+    action: AUDIT.USER_STATUS_CHANGED,
+    targetType: 'User',
+    targetId: user._id,
+    before: { status: previousStatus },
+    after: { status },
+    ip: context.ip,
+  })
+
   return {
     id: user._id,
     email: user.email,
@@ -400,7 +459,7 @@ export async function listPlatformCoupons(query) {
   return { items, meta: meta(page, total) }
 }
 
-export async function setCouponStatus(couponId, status) {
+export async function setCouponStatus(couponId, status, context = {}) {
   if (!mongoose.isValidObjectId(couponId))
     throw new AppError(404, 'COUPON_NOT_FOUND', 'Coupon not found')
   if (!['active', 'inactive'].includes(status))
@@ -411,7 +470,20 @@ export async function setCouponStatus(couponId, status) {
   if (coupon.status === 'expired')
     throw new AppError(409, 'COUPON_EXPIRED', 'An expired coupon cannot be reactivated')
 
+  const previousStatus = coupon.status
   coupon.status = status
   await coupon.save()
+
+  await recordAudit({
+    actorId: context.actorId,
+    actorRole: 'admin',
+    action: AUDIT.COUPON_STATUS_CHANGED,
+    targetType: 'Coupon',
+    targetId: coupon._id,
+    before: { status: previousStatus },
+    after: { status },
+    ip: context.ip,
+  })
+
   return coupon.toObject()
 }

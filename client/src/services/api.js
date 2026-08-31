@@ -81,6 +81,13 @@ export const paymentApi = {
   getCheckoutSession: (sessionId) => api.get(`/payments/checkout-sessions/${sessionId}`),
 }
 
+export const recommendationApi = {
+  forYou: (params) => api.get('/recommendations/for-you', { params }),
+  similar: (productId, params) =>
+    api.get(`/recommendations/products/${productId}/similar`, { params }),
+  recentlyViewed: (params) => api.get('/recommendations/recently-viewed', { params }),
+}
+
 export const sellerApi = {
   getStore: () => api.get('/sellers/me'),
   updateStore: (details) => api.patch('/sellers/me', details),
@@ -120,6 +127,24 @@ export const adminApi = {
     }),
   getCoupons: (params) => api.get('/admin/coupons', { params }),
   setCouponStatus: (couponId, status) => api.patch(`/admin/coupons/${couponId}/status`, { status }),
+}
+
+// Seller catalogue management. Every one of these is scoped server-side to the
+// authenticated seller — the client never sends a sellerId.
+export const sellerCatalogApi = {
+  listProducts: (params) => api.get('/products/seller', { params }),
+  getProduct: (productId) => api.get(`/products/seller/${productId}`),
+  createProduct: (details) => api.post('/products/seller', details),
+  updateProduct: (productId, details) => api.patch(`/products/seller/${productId}`, details),
+  removeProduct: (productId) => api.delete(`/products/seller/${productId}`),
+  submitProduct: (productId) => api.post(`/products/seller/${productId}/submit`),
+  addVariant: (productId, details) => api.post(`/products/seller/${productId}/variants`, details),
+  updateVariant: (productId, variantId, details) =>
+    api.patch(`/products/seller/${productId}/variants/${variantId}`, details),
+  removeVariant: (productId, variantId) =>
+    api.delete(`/products/seller/${productId}/variants/${variantId}`),
+  initInventory: (variantId, details) => api.post(`/inventory/variants/${variantId}`, details),
+  addStock: (variantId, details) => api.post(`/inventory/variants/${variantId}/add`, details),
 }
 
 export const notificationApi = {

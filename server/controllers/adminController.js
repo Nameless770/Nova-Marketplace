@@ -1,3 +1,4 @@
+import { listAuditLogs } from '../services/auditService.js'
 import {
   getPlatformOverview,
   listPlatformCategories,
@@ -22,7 +23,9 @@ export async function users(request, response) {
 }
 
 export async function userStatus(request, response) {
-  const user = await setUserStatus(request.user._id, request.params.userId, request.body.status)
+  const user = await setUserStatus(request.user._id, request.params.userId, request.body.status, {
+    ip: request.ip,
+  })
   response.json({ success: true, data: { user } })
 }
 
@@ -60,6 +63,13 @@ export async function coupons(request, response) {
 }
 
 export async function couponStatus(request, response) {
-  const coupon = await setCouponStatus(request.params.couponId, request.body.status)
+  const coupon = await setCouponStatus(request.params.couponId, request.body.status, {
+    actorId: request.user._id,
+    ip: request.ip,
+  })
   response.json({ success: true, data: { coupon } })
+}
+
+export async function auditLogs(request, response) {
+  response.json({ success: true, data: await listAuditLogs(request.query) })
 }

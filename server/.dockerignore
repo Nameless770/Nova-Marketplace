@@ -1,0 +1,12 @@
+# Keep secrets, local state and dev-only weight out of the build context.
+node_modules
+npm-debug.log
+.env
+.env.*
+!.env.example
+test
+coverage
+*.log
+startup-*.log
+Dockerfile
+.dockerignore

@@ -11,6 +11,7 @@ import { SellerApplication } from '../models/SellerApplication.js'
 import { SellerOrder } from '../models/SellerOrder.js'
 import { User } from '../models/User.js'
 import { AppError } from '../utils/errors.js'
+import { AUDIT, recordAudit } from './auditService.js'
 
 const MAX_ANALYTICS_RANGE_DAYS = 365
 const DEFAULT_ANALYTICS_RANGE_DAYS = 30
@@ -170,7 +171,7 @@ export async function getMyApplication(userId) {
   return application
 }
 
-export async function moderateSeller(sellerId, adminId, status, reason) {
+export async function moderateSeller(sellerId, adminId, status, reason, context = {}) {
   const session = await mongoose.startSession()
   try {
     let seller
@@ -178,6 +179,23 @@ export async function moderateSeller(sellerId, adminId, status, reason) {
       seller = await Seller.findById(sellerId).session(session)
       if (!seller) throw new AppError(404, 'SELLER_NOT_FOUND', 'Seller profile not found')
       if (status === 'approved' && seller.status === 'approved') return
+      const previousStatus = seller.status
+      // Written inside the same transaction, so the decision and its record
+      // commit together — neither can exist without the other.
+      await recordAudit(
+        {
+          actorId: adminId,
+          actorRole: 'admin',
+          action: AUDIT.SELLER_MODERATED,
+          targetType: 'Seller',
+          targetId: seller._id,
+          before: { status: previousStatus },
+          after: { status },
+          reason,
+          ip: context.ip,
+        },
+        session,
+      )
       seller.status = status
       seller.rejectionReason = status === 'rejected' ? reason : undefined
       seller.suspensionReason = status === 'suspended' ? reason : undefined

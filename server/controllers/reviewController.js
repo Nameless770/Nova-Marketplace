@@ -38,6 +38,7 @@ export async function moderate(request, response) {
     request.params.reviewId,
     request.body.status,
     request.body.reason,
+    { actorId: request.user._id, ip: request.ip },
   )
   response.json({ success: true, data: { review } })
 }
