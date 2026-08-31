@@ -11,6 +11,7 @@ import cartRoutes from './routes/cartRoutes.js'
 import wishlistRoutes from './routes/wishlistRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
+import refundRoutes from './routes/refundRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
 import qaRoutes from './routes/qaRoutes.js'
 import couponRoutes from './routes/couponRoutes.js'
@@ -55,6 +56,7 @@ app.use('/api/v1/cart', cartRoutes)
 app.use('/api/v1/wishlist', wishlistRoutes)
 app.use('/api/v1/orders', orderRoutes)
 app.use('/api/v1/payments', paymentRoutes)
+app.use('/api/v1/refunds', refundRoutes)
 app.use('/api/v1/reviews', reviewRoutes)
 app.use('/api/v1/qa', qaRoutes)
 app.use('/api/v1/coupons', couponRoutes)

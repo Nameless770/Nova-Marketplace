@@ -112,6 +112,12 @@ export const adminApi = {
   getCategories: (params) => api.get('/admin/categories', { params }),
   createCategory: (details) => api.post('/categories', details),
   updateCategory: (categoryId, details) => api.patch(`/admin/categories/${categoryId}`, details),
+  getRefundable: (orderId) => api.get(`/refunds/orders/${orderId}/refundable`),
+  getRefunds: (orderId) => api.get(`/refunds/orders/${orderId}`),
+  createRefund: (orderId, details, idempotencyKey) =>
+    api.post(`/refunds/orders/${orderId}`, details, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    }),
   getCoupons: (params) => api.get('/admin/coupons', { params }),
   setCouponStatus: (couponId, status) => api.patch(`/admin/coupons/${couponId}/status`, { status }),
 }

@@ -1,12 +1,16 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { AdminTable, Pagination, TableToolbar } from '../../components/admin/AdminTable.jsx'
+import { RefundDialog } from '../../components/admin/RefundDialog.jsx'
 import { useAdminTable } from '../../hooks/useAdminTable.js'
 import { adminApi } from '../../services/api.js'
 import { formatMoney } from '../../utils/format.js'
 
+const REFUNDABLE = ['paid', 'partially_refunded']
+
 export function AdminOrdersPage() {
   const fetcher = useCallback((params) => adminApi.getOrders(params), [])
   const table = useAdminTable(fetcher, { sortBy: 'createdAt' })
+  const [refunding, setRefunding] = useState(null)
 
   const columns = [
     { key: 'orderNumber', header: 'Order', render: (order) => order.orderNumber },
@@ -35,6 +39,18 @@ export function AdminOrdersPage() {
       sortable: true,
       render: (order) => new Date(order.createdAt).toLocaleDateString(),
     },
+    {
+      key: 'actions',
+      header: 'Manage',
+      render: (order) =>
+        REFUNDABLE.includes(order.paymentStatus) ? (
+          <button type="button" className="text-button" onClick={() => setRefunding(order)}>
+            Refund
+          </button>
+        ) : (
+          <span className="admin-subtle">&mdash;</span>
+        ),
+    },
   ]
 
   return (
@@ -48,17 +64,34 @@ export function AdminOrdersPage() {
           {
             key: 'status',
             label: 'Status',
-            options: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
+            options: [
+              'pending',
+              'confirmed',
+              'processing',
+              'shipped',
+              'delivered',
+              'cancelled',
+              'refunded',
+            ],
           },
           {
             key: 'paymentStatus',
             label: 'Payment',
-            options: ['pending', 'paid', 'failed', 'refunded'],
+            options: ['pending', 'paid', 'failed', 'partially_refunded', 'refunded'],
           },
         ]}
       />
       <AdminTable table={table} columns={columns} emptyLabel="No orders match these filters." />
       <Pagination table={table} />
+
+      {refunding && (
+        <RefundDialog
+          key={refunding._id}
+          order={refunding}
+          onClose={() => setRefunding(null)}
+          onRefunded={table.reload}
+        />
+      )}
     </section>
   )
 }

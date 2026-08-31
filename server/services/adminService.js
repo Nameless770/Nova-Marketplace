@@ -55,8 +55,11 @@ export function resolveRange({ from, to } = {}) {
 
 export async function getPlatformOverview(query = {}) {
   const range = resolveRange(query)
+  // Partially refunded orders are still captured sales; the refunded portion is
+  // subtracted separately rather than by excluding the whole order.
+  const CAPTURED = { $in: ['paid', 'partially_refunded'] }
   const paidInRange = {
-    paymentStatus: 'paid',
+    paymentStatus: CAPTURED,
     createdAt: { $gte: range.from, $lte: range.to },
   }
 
@@ -74,8 +77,15 @@ export async function getPlatformOverview(query = {}) {
     topSellers,
   ] = await Promise.all([
     Order.aggregate([
-      { $match: { paymentStatus: 'paid' } },
-      { $group: { _id: null, revenueMinor: { $sum: '$totalMinor' }, orders: { $sum: 1 } } },
+      { $match: { paymentStatus: CAPTURED } },
+      {
+        $group: {
+          _id: null,
+          revenueMinor: { $sum: '$totalMinor' },
+          refundedMinor: { $sum: '$refundedMinor' },
+          orders: { $sum: 1 },
+        },
+      },
     ]),
     Order.aggregate([
       { $match: paidInRange },
@@ -109,7 +119,7 @@ export async function getPlatformOverview(query = {}) {
         },
       },
       { $unwind: '$order' },
-      { $match: { 'order.paymentStatus': 'paid' } },
+      { $match: { 'order.paymentStatus': CAPTURED } },
       {
         $group: {
           _id: '$sellerId',
@@ -150,8 +160,17 @@ export async function getPlatformOverview(query = {}) {
   return {
     period: { from: range.from, to: range.to },
     revenue: {
-      allTimeMinor: revenueAllTime[0]?.revenueMinor ?? 0,
-      periodMinor: revenueInRange[0]?.revenueMinor ?? 0,
+      // Net of refunds, with gross kept alongside so the two are never confused.
+      allTimeMinor: Math.max(
+        0,
+        (revenueAllTime[0]?.revenueMinor ?? 0) - (revenueAllTime[0]?.refundedMinor ?? 0),
+      ),
+      grossAllTimeMinor: revenueAllTime[0]?.revenueMinor ?? 0,
+      refundedAllTimeMinor: revenueAllTime[0]?.refundedMinor ?? 0,
+      periodMinor: Math.max(
+        0,
+        (revenueInRange[0]?.revenueMinor ?? 0) - (revenueInRange[0]?.refundedMinor ?? 0),
+      ),
       paidOrdersAllTime: revenueAllTime[0]?.orders ?? 0,
       paidOrdersInPeriod: revenueInRange[0]?.orders ?? 0,
     },

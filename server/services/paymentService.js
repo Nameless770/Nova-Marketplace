@@ -149,6 +149,21 @@ async function finalizeReservations(orderId, action, session) {
   }
 }
 
+const REFUND_EVENTS = {
+  'refund.updated': true,
+  'charge.refund.updated': true,
+  'refund.failed': false,
+  'charge.refund.failed': false,
+}
+
+async function applyRefundWebhook(event) {
+  const { applyRefundEvent } = await import('./refundService.js')
+  const object = event.data.object
+  const stripeRefundId = object.id
+  const succeeded = REFUND_EVENTS[event.type] && object.status === 'succeeded'
+  await applyRefundEvent(stripeRefundId, succeeded ? 'succeeded' : 'failed')
+}
+
 async function applyPaymentEvent(event) {
   const session = await mongoose.startSession()
   try {
@@ -213,7 +228,8 @@ export async function handleStripeWebhook(rawBody, signature) {
       status: 'processing',
     })
   try {
-    await applyPaymentEvent(event)
+    if (event.type in REFUND_EVENTS) await applyRefundWebhook(event)
+    else await applyPaymentEvent(event)
     await WebhookEvent.updateOne(
       { provider: 'stripe', eventId: event.id },
       { $set: { status: 'processed', processedAt: new Date() } },

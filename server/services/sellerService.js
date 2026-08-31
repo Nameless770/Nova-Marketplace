@@ -4,6 +4,7 @@ import { Notification } from '../models/Notification.js'
 import { Order } from '../models/Order.js'
 import { OrderItem } from '../models/OrderItem.js'
 import { Product } from '../models/Product.js'
+import { Refund } from '../models/Refund.js'
 import { Review } from '../models/Review.js'
 import { Seller } from '../models/Seller.js'
 import { SellerApplication } from '../models/SellerApplication.js'
@@ -16,7 +17,9 @@ const DEFAULT_ANALYTICS_RANGE_DAYS = 30
 
 // Revenue is only recognised for orders Stripe has confirmed as paid. Until
 // SellerLedgerEntries exist this is the authoritative seller revenue figure.
-const PAID_ORDER_MATCH = { 'order.paymentStatus': 'paid' }
+// A partially refunded order is still a captured sale — excluding it would drop
+// the whole order's revenue instead of just the refunded part.
+const PAID_ORDER_MATCH = { 'order.paymentStatus': { $in: ['paid', 'partially_refunded'] } }
 
 // Derived from authoritative quantities rather than the denormalized isLowStock
 // flag, so a drifted cache cannot hide a stock-out from the seller.
@@ -321,7 +324,7 @@ export async function getSellerAnalytics(userId, query = {}) {
   const sellerId = seller._id
   const range = resolveRange(query)
 
-  const [totals, units, bestSellers, lowStock] = await Promise.all([
+  const [totals, units, bestSellers, lowStock, refunded] = await Promise.all([
     SellerOrder.aggregate([
       ...paidOrderPipeline(sellerId, range),
       {
@@ -356,12 +359,34 @@ export async function getSellerAnalytics(userId, query = {}) {
       .sort({ quantityAvailable: 1, _id: 1 })
       .limit(10)
       .lean(),
+    // Attribution comes from the per-seller allocation, not the initiating
+    // seller, so admin-issued refunds still reduce the right seller's revenue.
+    Refund.aggregate([
+      { $match: { status: 'succeeded', createdAt: { $gte: range.from, $lte: range.to } } },
+      { $unwind: '$allocations' },
+      { $match: { 'allocations.sellerId': sellerId } },
+      {
+        $group: {
+          _id: null,
+          refundedMinor: { $sum: '$allocations.amountMinor' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
   ])
+
+  const grossRevenueMinor = totals[0]?.revenueMinor ?? 0
+  const refundedMinor = refunded[0]?.refundedMinor ?? 0
 
   return {
     period: { from: range.from, to: range.to },
     metrics: {
-      revenueMinor: totals[0]?.revenueMinor ?? 0,
+      // Headline revenue is net of refunds; gross is kept alongside it so the
+      // two are never confused.
+      revenueMinor: Math.max(0, grossRevenueMinor - refundedMinor),
+      grossRevenueMinor,
+      refundedMinor,
+      refundCount: refunded[0]?.count ?? 0,
       discountMinor: totals[0]?.discountMinor ?? 0,
       orders: totals[0]?.orders ?? 0,
       unitsSold: units[0]?.unitsSold ?? 0,

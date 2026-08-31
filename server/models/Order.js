@@ -28,9 +28,16 @@ const orderSchema = new mongoose.Schema(
     },
     paymentStatus: {
       type: String,
-      enum: ['pending', 'paid', 'failed', 'refunded'],
+      enum: ['pending', 'paid', 'failed', 'partially_refunded', 'refunded'],
       default: 'pending',
       required: true,
+    },
+    refundedMinor: {
+      type: Number,
+      required: true,
+      min: 0,
+      validate: Number.isSafeInteger,
+      default: 0,
     },
     currency: { type: String, required: true, uppercase: true, minlength: 3, maxlength: 3 },
     subtotalMinor: { type: Number, required: true, min: 0, validate: Number.isSafeInteger },

@@ -11,9 +11,18 @@ const paymentSchema = new mongoose.Schema(
     currency: { type: String, required: true, uppercase: true, minlength: 3, maxlength: 3 },
     status: {
       type: String,
-      enum: ['pending', 'paid', 'failed', 'expired', 'refunded'],
+      enum: ['pending', 'paid', 'failed', 'expired', 'partially_refunded', 'refunded'],
       default: 'pending',
       required: true,
+    },
+    // Running total of succeeded + in-flight refunds. The conditional update that
+    // increments this is what makes over-refunding impossible under concurrency.
+    refundedMinor: {
+      type: Number,
+      required: true,
+      min: 0,
+      validate: Number.isSafeInteger,
+      default: 0,
     },
     failureCode: { type: String, maxlength: 120 },
     idempotencyKey: { type: String, required: true, unique: true, maxlength: 160 },
