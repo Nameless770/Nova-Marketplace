@@ -30,5 +30,8 @@ const inventorySchema = new mongoose.Schema(
 
 inventorySchema.index({ sellerId: 1, status: 1, updatedAt: -1 })
 inventorySchema.index({ sellerId: 1, isLowStock: 1, updatedAt: -1 })
+// The admin overview counts low stock across every seller, so it cannot use the
+// seller-prefixed index above.
+inventorySchema.index({ isLowStock: 1 })
 
 export const Inventory = mongoose.model('Inventory', inventorySchema)

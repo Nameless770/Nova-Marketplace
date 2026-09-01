@@ -103,27 +103,54 @@ export async function createOrderFromCart(
         .session(session)
         .lean()
 
-      const preparedItems = []
-      const sellerGroups = new Map()
-      for (const cartItem of cart.items) {
-        const product = await Product.findOne({ _id: cartItem.productId, status: 'active' })
+      // Three batched lookups instead of three per item. The catalogue reads are
+      // independent of each other, so doing them per item only multiplied round
+      // trips while transaction locks were held.
+      const [products, variants] = await Promise.all([
+        Product.find({ _id: { $in: cart.items.map((item) => item.productId) }, status: 'active' })
           .session(session)
-          .lean()
-        const variant = await ProductVariant.findOne({
-          _id: cartItem.variantId,
-          productId: cartItem.productId,
+          .lean(),
+        ProductVariant.find({
+          _id: { $in: cart.items.map((item) => item.variantId) },
           status: 'active',
         })
           .session(session)
-          .lean()
-        const seller =
-          variant &&
-          (await Seller.findOne({ _id: variant.sellerId, status: 'approved' })
-            .session(session)
-            .lean())
-        if (!product || !variant || !seller)
+          .lean(),
+      ])
+      const productById = new Map(products.map((item) => [item._id.toString(), item]))
+      const variantById = new Map(variants.map((item) => [item._id.toString(), item]))
+
+      const sellers = await Seller.find({
+        _id: { $in: [...new Set(variants.map((variant) => variant.sellerId.toString()))] },
+        status: 'approved',
+      })
+        .session(session)
+        .lean()
+      const sellerById = new Map(sellers.map((item) => [item._id.toString(), item]))
+
+      const preparedItems = []
+      const sellerGroups = new Map()
+      for (const cartItem of cart.items) {
+        const product = productById.get(cartItem.productId.toString())
+        const variant = variantById.get(cartItem.variantId.toString())
+        // The per-item variant lookup also asserted the variant belongs to the
+        // product; batching means checking that here instead of losing it.
+        const seller = variant && sellerById.get(variant.sellerId.toString())
+        if (
+          !product ||
+          !variant ||
+          !seller ||
+          variant.productId.toString() !== cartItem.productId.toString()
+        )
           throw new AppError(409, 'PRODUCT_UNAVAILABLE', 'A cart item is no longer available')
 
+        // Stays per item, and stays a conditional update: `quantityAvailable:
+        // { $gte }` evaluated atomically with the write is the only thing
+        // preventing overselling under concurrency. Batching this would
+        // reintroduce a read-then-write race.
+        //
+        // The derived fields are recomputed in the same command via an
+        // aggregation pipeline, which removes the second write this used to do.
         const inventory = await Inventory.findOneAndUpdate(
           {
             variantId: variant._id,
@@ -131,14 +158,28 @@ export async function createOrderFromCart(
             quantityAvailable: { $gte: cartItem.quantity },
             status: { $in: ['active', 'out_of_stock'] },
           },
-          { $inc: { quantityReserved: cartItem.quantity, version: 1 }, $set: { status: 'active' } },
+          [
+            {
+              $set: {
+                quantityReserved: { $add: ['$quantityReserved', cartItem.quantity] },
+                version: { $add: ['$version', 1] },
+              },
+            },
+            // Sees the incremented reservation from the stage above.
+            {
+              $set: { quantityAvailable: { $subtract: ['$quantityOnHand', '$quantityReserved'] } },
+            },
+            {
+              $set: {
+                isLowStock: { $lte: ['$quantityAvailable', '$lowStockThreshold'] },
+                status: 'active',
+              },
+            },
+          ],
           { new: true, session },
         )
         if (!inventory)
           throw new AppError(409, 'INSUFFICIENT_STOCK', 'A cart item has insufficient stock')
-        inventory.quantityAvailable = inventory.quantityOnHand - inventory.quantityReserved
-        inventory.isLowStock = inventory.quantityAvailable <= inventory.lowStockThreshold
-        await inventory.save({ session })
 
         const subtotalMinor = lineTotal(variant.currentPriceMinor, cartItem.quantity)
         const prepared = { cartItem, product, variant, seller, inventory, subtotalMinor }
@@ -199,94 +240,85 @@ export async function createOrderFromCart(
         { session },
       ).then(([created]) => created)
 
-      const sellerOrders = new Map()
-      for (const group of sellerGroups.values()) {
-        const [sellerOrder] = await SellerOrder.create(
-          [
-            {
-              orderId: order._id,
-              sellerId: group.seller._id,
-              sellerOrderNumber: `${order.orderNumber}-${group.seller._id.toString().slice(-6).toUpperCase()}`,
-              subtotalMinor: group.subtotalMinor,
-              shippingMinor: 0,
-              discountMinor: groupDiscounts.get(group.seller._id.toString()),
-              taxMinor: 0,
-              totalMinor: group.subtotalMinor - groupDiscounts.get(group.seller._id.toString()),
-              itemCount: group.items.length,
-            },
-          ],
-          { session },
-        )
-        sellerOrders.set(group.seller._id.toString(), sellerOrder)
-      }
+      // One insert for every seller on the order rather than one each.
+      const created = await SellerOrder.insertMany(
+        [...sellerGroups.values()].map((group) => ({
+          orderId: order._id,
+          sellerId: group.seller._id,
+          sellerOrderNumber: `${order.orderNumber}-${group.seller._id.toString().slice(-6).toUpperCase()}`,
+          subtotalMinor: group.subtotalMinor,
+          shippingMinor: 0,
+          discountMinor: groupDiscounts.get(group.seller._id.toString()),
+          taxMinor: 0,
+          totalMinor: group.subtotalMinor - groupDiscounts.get(group.seller._id.toString()),
+          itemCount: group.items.length,
+        })),
+        { session, ordered: true },
+      )
+      const sellerOrders = new Map(created.map((item) => [item.sellerId.toString(), item]))
 
       if (couponResult)
         await reserveCoupon(couponResult.coupon._id, customerId, order._id, discountMinor, session)
 
-      const orderItems = []
-      for (const item of preparedItems) {
-        const sellerOrder = sellerOrders.get(item.seller._id.toString())
-        const [orderItem] = await OrderItem.create(
-          [
-            {
-              orderId: order._id,
-              sellerOrderId: sellerOrder._id,
-              sellerId: item.seller._id,
-              productId: item.product._id,
-              variantId: item.variant._id,
-              productSnapshot: {
-                title: item.product.title,
-                brand: item.product.brand,
-                imageUrl: item.product.images[0]?.url,
-              },
-              variantSnapshot: {
-                name: item.variant.name,
-                sku: item.variant.sku,
-                size: item.variant.size,
-                color: item.variant.color,
-              },
-              unitPriceMinor: item.variant.currentPriceMinor,
-              quantity: item.cartItem.quantity,
-              discountMinor: 0,
-              taxMinor: 0,
-              shippingMinor: 0,
-              lineTotalMinor: item.subtotalMinor,
-            },
-          ],
-          { session },
-        )
-        orderItems.push(orderItem)
-        const reservationKey = `${order._id.toString()}:${item.variant._id.toString()}`
-        await InventoryReservation.create(
-          [
-            {
-              reservationKey,
-              orderId: order._id,
-              inventoryId: item.inventory._id,
-              sellerId: item.seller._id,
-              variantId: item.variant._id,
-              quantity: item.cartItem.quantity,
-              expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-            },
-          ],
-          { session },
-        )
-        await InventoryHistory.create(
-          [
-            {
-              inventoryId: item.inventory._id,
-              sellerId: item.seller._id,
-              variantId: item.variant._id,
-              commandId: reservationKey,
-              type: 'reserve',
-              quantity: item.cartItem.quantity,
-              quantityOnHandAfter: item.inventory.quantityOnHand,
-              quantityReservedAfter: item.inventory.quantityReserved,
-            },
-          ],
-          { session },
-        )
-      }
+      // Three inserts total rather than three per item. Each document is derived
+      // purely from data already in hand, so nothing here needs a round trip.
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
+      const reservationKeyFor = (item) => `${order._id.toString()}:${item.variant._id.toString()}`
+
+      const orderItems = await OrderItem.insertMany(
+        preparedItems.map((item) => ({
+          orderId: order._id,
+          sellerOrderId: sellerOrders.get(item.seller._id.toString())._id,
+          sellerId: item.seller._id,
+          productId: item.product._id,
+          variantId: item.variant._id,
+          productSnapshot: {
+            title: item.product.title,
+            brand: item.product.brand,
+            imageUrl: item.product.images[0]?.url,
+          },
+          variantSnapshot: {
+            name: item.variant.name,
+            sku: item.variant.sku,
+            size: item.variant.size,
+            color: item.variant.color,
+          },
+          unitPriceMinor: item.variant.currentPriceMinor,
+          quantity: item.cartItem.quantity,
+          discountMinor: 0,
+          taxMinor: 0,
+          shippingMinor: 0,
+          lineTotalMinor: item.subtotalMinor,
+        })),
+        { session, ordered: true },
+      )
+
+      await InventoryReservation.insertMany(
+        preparedItems.map((item) => ({
+          reservationKey: reservationKeyFor(item),
+          orderId: order._id,
+          inventoryId: item.inventory._id,
+          sellerId: item.seller._id,
+          variantId: item.variant._id,
+          quantity: item.cartItem.quantity,
+          expiresAt,
+        })),
+        { session, ordered: true },
+      )
+
+      await InventoryHistory.insertMany(
+        preparedItems.map((item) => ({
+          inventoryId: item.inventory._id,
+          sellerId: item.seller._id,
+          variantId: item.variant._id,
+          commandId: reservationKeyFor(item),
+          type: 'reserve',
+          quantity: item.cartItem.quantity,
+          quantityOnHandAfter: item.inventory.quantityOnHand,
+          quantityReservedAfter: item.inventory.quantityReserved,
+        })),
+        { session, ordered: true },
+      )
 
       cart.items = []
       await cart.save({ session })

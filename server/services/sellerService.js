@@ -22,13 +22,16 @@ const DEFAULT_ANALYTICS_RANGE_DAYS = 30
 // the whole order's revenue instead of just the refunded part.
 const PAID_ORDER_MATCH = { 'order.paymentStatus': { $in: ['paid', 'partially_refunded'] } }
 
-// Derived from authoritative quantities rather than the denormalized isLowStock
-// flag, so a drifted cache cannot hide a stock-out from the seller.
+// Uses the denormalized `isLowStock` flag, which the `{ sellerId, isLowStock,
+// updatedAt }` index can serve. Comparing the two quantity fields with `$expr`
+// is unindexable and forces a collection scan that grows with the catalogue.
+//
+// The flag is safe to trust because it is recomputed in the same write as the
+// quantities at every mutation site — reserve, commit, release, restock and
+// manual adjustment — and `inventory-low-stock-flag.test.js` asserts that
+// invariant, so drift fails CI rather than silently hiding a stock-out.
 function lowStockFilter(sellerId) {
-  return {
-    sellerId,
-    $expr: { $lte: ['$quantityAvailable', '$lowStockThreshold'] },
-  }
+  return { sellerId, isLowStock: true }
 }
 
 function resolveRange({ from, to } = {}) {

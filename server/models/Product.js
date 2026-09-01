@@ -64,6 +64,9 @@ productSchema.index({ categoryIds: 1, status: 1, createdAt: -1, _id: -1 })
 productSchema.index({ status: 1, currentPriceMinor: 1 })
 productSchema.index({ status: 1, ratingAverage: -1 })
 productSchema.index({ title: 'text', description: 'text', brand: 'text' })
+// Brand is an exact-match facet filter in search. The text index above cannot
+// serve an equality match on a single field, so without this it was a scan.
+productSchema.index({ status: 1, brand: 1 })
 
 productSchema.pre('validate', function validatePricing(next) {
   if (!this.hasVariants && this.priceMinor === undefined)

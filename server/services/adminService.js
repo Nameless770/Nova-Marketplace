@@ -110,7 +110,8 @@ export async function getPlatformOverview(query = {}) {
     User.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Seller.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
     Product.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
-    Inventory.countDocuments({ $expr: { $lte: ['$quantityAvailable', '$lowStockThreshold'] } }),
+    // Indexed boolean rather than an unindexable two-field `$expr` comparison.
+    Inventory.countDocuments({ isLowStock: true }),
     Review.countDocuments({ status: 'pending' }),
     Coupon.countDocuments({ status: 'active' }),
     OrderItem.aggregate([
@@ -396,8 +397,7 @@ export async function listPlatformOrders(query) {
 export async function listPlatformInventory(query) {
   const page = paginate(query)
   const filter = {}
-  if (query.lowStock === 'true')
-    filter.$expr = { $lte: ['$quantityAvailable', '$lowStockThreshold'] }
+  if (query.lowStock === 'true') filter.isLowStock = true
   if (query.status) filter.status = query.status
   if (query.q?.trim()) filter.sku = searchRegex(query.q)
 

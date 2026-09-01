@@ -105,8 +105,10 @@ export async function createCatalogItem(overrides = {}) {
     quantityOnHand: overrides.quantityOnHand ?? 10,
     quantityReserved: 0,
     quantityAvailable: overrides.quantityOnHand ?? 10,
-    lowStockThreshold: 1,
-    isLowStock: false,
+    lowStockThreshold: overrides.lowStockThreshold ?? 1,
+    // Derived rather than hard-coded false, so a fixture cannot create a row the
+    // production code would never write — the low-stock listings trust this flag.
+    isLowStock: (overrides.quantityOnHand ?? 10) <= (overrides.lowStockThreshold ?? 1),
     status: 'active',
   })
   return { owner, seller, category, product, variant, inventory }
