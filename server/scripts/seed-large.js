@@ -23,6 +23,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: join(here, '..', '.env') })
 
 const { connectDatabase, disconnectDatabase } = await import('../config/database.js')
+const { imageForCategory } = await import('./productImages.js')
 
 const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
@@ -325,7 +326,7 @@ async function run() {
       title, slug,
       description: `${title} with ${pick(vocab.features)} and ${pick(vocab.features)}. Made in small batches by ${seller.storeName}.`,
       brand: seller.brand,
-      images: [{ url: `https://picsum.photos/seed/${slug}/800/800`, alt: title }],
+      images: [{ url: imageForCategory(category.slug, slug), alt: title }],
       hasVariants: true, status,
       priceMinor: minPrice, currentPriceMinor: minPrice,
       minPriceMinor: minPrice, maxPriceMinor: Math.max(...prices),

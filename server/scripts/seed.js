@@ -19,6 +19,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: join(here, '..', '.env') })
 
 const { connectDatabase, disconnectDatabase } = await import('../config/database.js')
+const { imageForCategory } = await import('./productImages.js')
 const { Category } = await import('../models/Category.js')
 const { Inventory } = await import('../models/Inventory.js')
 const { Product } = await import('../models/Product.js')
@@ -107,10 +108,10 @@ const CATALOGUE = [
   },
 ]
 
-function image(title) {
-  // Deterministic placeholder art so the grid is not full of grey boxes.
-  const seed = encodeURIComponent(title.toLowerCase().replace(/\s+/g, '-'))
-  return { url: `https://picsum.photos/seed/${seed}/800/800`, alt: title }
+function image(title, categorySlug) {
+  // Real category-appropriate product photo (see productImages.js), keyed by the
+  // title so a product always maps to the same image across re-seeds.
+  return { url: imageForCategory(categorySlug, title), alt: title }
 }
 
 async function upsertUser({ email, first, last, role, sellerApprovalStatus }) {
@@ -188,7 +189,7 @@ async function run() {
           description: entry.description,
           brand: entry.brand,
           categoryIds: [category._id],
-          images: [image(entry.title)],
+          images: [image(entry.title, entry.category)],
           hasVariants: true,
           status: 'active',
           ratingAverage: mongoose.Types.Decimal128.fromString(entry.rating),

@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ErrorState } from './ErrorState.jsx'
 import { LoadingState } from './LoadingState.jsx'
+import { ProductImage } from './ProductImage.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { formatMoney, formatRating } from '../utils/format.js'
 
@@ -34,11 +35,7 @@ export function RecommendationShelf({ title, fetcher, emptyLabel, showReasons = 
         {items.map((item) => (
           <li key={item.productId} className="shelf-card">
             <Link to={`/products/${item.productId}`} className="shelf-image">
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.title} loading="lazy" />
-              ) : (
-                <span>No image</span>
-              )}
+              <ProductImage url={item.imageUrl} alt={item.title} label={item.title} loading="lazy" />
             </Link>
             <div className="shelf-body">
               <Link to={`/products/${item.productId}`} className="shelf-title">

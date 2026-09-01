@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 
 export default [
-  { ignores: ['client/dist/**', 'server/node_modules/**'] },
+  { ignores: ['client/dist/**', 'server/node_modules/**', '.local-mongo/**'] },
   js.configs.recommended,
   {
     files: ['client/**/*.{js,jsx}', 'server/**/*.js'],

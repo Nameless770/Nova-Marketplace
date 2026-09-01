@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
+import { ProductImage } from '../components/ProductImage.jsx'
 import { ProductReviews } from '../components/ProductReviews.jsx'
 import { RecommendationShelf } from '../components/RecommendationShelf.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -55,11 +56,11 @@ export function ProductDetailsPage() {
   return (
     <section className="detail-layout">
       <div className="detail-image">
-        {product.images?.[0]?.url ? (
-          <img src={product.images[0].url} alt={product.images[0].alt || product.title} />
-        ) : (
-          'No image'
-        )}
+        <ProductImage
+          url={product.images?.[0]?.url}
+          alt={product.images?.[0]?.alt}
+          label={product.title}
+        />
       </div>
       <div className="detail-copy">
         <p className="eyebrow">{product.brand || 'Independent label'}</p>

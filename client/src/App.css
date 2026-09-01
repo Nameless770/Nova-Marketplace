@@ -542,12 +542,73 @@ h2 {
   gap: 1rem;
   margin-top: 2rem;
 }
-.category-list div,
 .empty-state,
 .state-panel {
   padding: 1.5rem;
   border: 1px solid var(--line);
+  border-radius: var(--r-lg);
   background: var(--panel);
+}
+
+/* Category tiles are links, so they need to look tappable: the card surface
+   plus a coral edge on hover/focus, rather than an inert bordered box. */
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-xxs);
+  min-height: 96px;
+  justify-content: center;
+  padding: var(--s-lg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface-card);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.category-tile:hover,
+.category-tile:focus-visible {
+  border-color: var(--primary);
+  background: var(--surface-cream-strong);
+}
+.category-tile-name {
+  font-size: 18px;
+  font-weight: 500;
+}
+.category-tile-desc {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Shows which filter is narrowing the grid, with a way out of it. */
+.active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-xs);
+  margin-bottom: var(--s-md);
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-xs);
+  padding: 4px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+}
+.filter-chip a {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  text-decoration: none;
+}
+.filter-chip a:hover {
+  color: var(--primary);
 }
 .auth-panel {
   width: min(480px, 100%);

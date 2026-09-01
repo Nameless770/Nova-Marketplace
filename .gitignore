@@ -12,3 +12,5 @@ client/.env.*
 coverage/
 *.log
 .DS_Store
+# local dev MongoDB (Atlas fallback)
+.local-mongo/

@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
+import { ProductImage } from '../components/ProductImage.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { cartApi } from '../services/api.js'
 import { formatMoney, variantLabel } from '../utils/format.js'
@@ -51,14 +52,11 @@ export function CartPage() {
         {cart.items.map((item) => (
           <article className="line-item" key={item._id}>
             <Link className="line-item-image" to={`/products/${item.productId}`}>
-              {item.product?.image?.url ? (
-                <img
-                  src={item.product.image.url}
-                  alt={item.product.image.alt || item.product.title}
-                />
-              ) : (
-                <span>No image</span>
-              )}
+              <ProductImage
+                url={item.product?.image?.url}
+                alt={item.product?.image?.alt}
+                label={item.product?.title}
+              />
             </Link>
             <div>
               <h3>{item.product?.title || 'Unavailable product'}</h3>
