@@ -794,6 +794,44 @@ h2 {
   font-size: 0.9rem;
   margin: 0;
 }
+.location-title {
+  margin: 0 0 var(--s-xs);
+  font-size: 16px;
+  font-weight: 600;
+}
+.location-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-xs);
+}
+.location-map {
+  height: 260px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  /* Leaflet panes stack above page chrome without this. */
+  z-index: 0;
+}
+.location-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+/* Coral pin with a soft halo, in place of Leaflet's default image marker. */
+.map-pin .map-pin-dot {
+  display: block;
+  width: 18px;
+  height: 18px;
+  margin: 4px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 30%, transparent);
+  cursor: grab;
+}
+.map-pin:active .map-pin-dot {
+  cursor: grabbing;
+}
 .success-message {
   grid-column: span 2;
   color: #3c7250;

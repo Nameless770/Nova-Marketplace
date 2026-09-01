@@ -9,6 +9,7 @@ import { Product } from '../models/Product.js'
 import { ProductVariant } from '../models/ProductVariant.js'
 import { Seller } from '../models/Seller.js'
 import { SellerOrder } from '../models/SellerOrder.js'
+import { User } from '../models/User.js'
 import { AppError } from '../utils/errors.js'
 import { calculateCoupon, reserveCoupon } from './couponService.js'
 
@@ -26,8 +27,17 @@ function orderNumber() {
   return `ORD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
 }
 
-function snapshotAddress(address) {
-  return { ...address, country: address.country.toUpperCase() }
+// Checkout sends a map pin, so country may be absent; only normalise it when it
+// is actually there. `fallbackName` fills the recipient from the account, since
+// the shopper no longer types their name at checkout.
+function snapshotAddress(address, fallbackName) {
+  const snapshot = {
+    ...address,
+    firstName: address.firstName || fallbackName?.firstName,
+    lastName: address.lastName || fallbackName?.lastName,
+  }
+  if (typeof address.country === 'string') snapshot.country = address.country.toUpperCase()
+  return snapshot
 }
 
 function lineTotal(unitPriceMinor, quantity) {
@@ -69,6 +79,13 @@ export async function createOrderFromCart(
       const cart = await Cart.findOne({ userId: customerId }).session(session)
       if (!cart || cart.items.length === 0)
         throw new AppError(409, 'CART_EMPTY', 'Cannot create an order from an empty cart')
+
+      // The recipient name comes from the account now that checkout no longer
+      // asks for it.
+      const customer = await User.findById(customerId)
+        .select('firstName lastName')
+        .session(session)
+        .lean()
 
       const preparedItems = []
       const sellerGroups = new Map()
@@ -159,8 +176,8 @@ export async function createOrderFromCart(
                   },
                 ]
               : [],
-            shippingAddressSnapshot: snapshotAddress(shippingAddress),
-            billingAddressSnapshot: snapshotAddress(billingAddress ?? shippingAddress),
+            shippingAddressSnapshot: snapshotAddress(shippingAddress, customer),
+            billingAddressSnapshot: snapshotAddress(billingAddress ?? shippingAddress, customer),
           },
         ],
         { session },

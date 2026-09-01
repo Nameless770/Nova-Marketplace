@@ -2,27 +2,16 @@ import { useCallback, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
+import { LocationPicker } from '../components/LocationPicker.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { cartApi, couponApi, orderApi, paymentApi } from '../services/api.js'
 import { formatMoney, variantLabel } from '../utils/format.js'
 
-const emptyAddress = {
-  firstName: '',
-  lastName: '',
-  line1: '',
-  postalCode: '',
-  country: '',
-}
-
-const addressFields = [
-  { name: 'firstName', label: 'First name' },
-  { name: 'lastName', label: 'Last name' },
-  { name: 'postalCode', label: 'Postal code' },
-  { name: 'country', label: 'Country (2-letter code)', maxLength: 2, placeholder: 'US' },
-]
-
 export function CheckoutPage() {
-  const [address, setAddress] = useState(emptyAddress)
+  // The delivery point is the whole address now: the shopper picks it on the
+  // map and the recipient name comes from their account, server-side.
+  const [address, setAddress] = useState(null)
+  const [position, setPosition] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [couponCode, setCouponCode] = useState('')
@@ -43,12 +32,9 @@ export function CheckoutPage() {
     setGeoStatus('locating')
     setGeoError(null)
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords
-        setAddress((prev) => ({
-          ...prev,
-          line1: `Current location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
-        }))
+      (result) => {
+        const { latitude, longitude } = result.coords
+        setPosition({ latitude, longitude })
         setGeoStatus('done')
       },
       (positionError) => {
@@ -105,10 +91,13 @@ export function CheckoutPage() {
     setError(null)
     try {
       const idempotencyKey = checkoutIdempotencyKey.current
+      // `label` is only for showing the resolved address on screen.
+      const shippingAddress = { ...address }
+      delete shippingAddress.label
       const order = await orderApi.create(
         {
-          shippingAddress: address,
-          billingAddress: address,
+          shippingAddress,
+          billingAddress: shippingAddress,
           ...(appliedCoupon ? { couponCode: appliedCoupon.code } : {}),
         },
         idempotencyKey,
@@ -191,19 +180,8 @@ export function CheckoutPage() {
         </p>
       )}
       <form onSubmit={submit} className="address-form">
-        {addressFields.map((field) => (
-          <label key={field.name}>
-            {field.label}
-            <input
-              required
-              maxLength={field.maxLength}
-              placeholder={field.placeholder}
-              value={address[field.name]}
-              onChange={(e) => setAddress({ ...address, [field.name]: e.target.value })}
-            />
-          </label>
-        ))}
         <div className="location-field">
+          <h3 className="location-title">Where should this go?</h3>
           <button
             type="button"
             className="secondary-action"
@@ -213,11 +191,15 @@ export function CheckoutPage() {
             {geoStatus === 'locating'
               ? 'Getting your location…'
               : geoStatus === 'done'
-                ? 'Update my location'
+                ? 'Re-centre on my location'
                 : '📍 Send to my current location'}
           </button>
-          {geoStatus === 'done' && (
-            <p className="location-captured">Shipping to {address.line1}</p>
+          {geoStatus === 'done' && position && (
+            <LocationPicker
+              latitude={position.latitude}
+              longitude={position.longitude}
+              onChange={setAddress}
+            />
           )}
           {geoStatus === 'error' && geoError && (
             <p className="location-error" role="alert">
@@ -226,7 +208,7 @@ export function CheckoutPage() {
           )}
         </div>
         {error && <ErrorState message={error} />}
-        <button className="primary-action" disabled={loading || geoStatus !== 'done'}>
+        <button className="primary-action" disabled={loading || !address}>
           {loading ? 'Processing payment' : 'Pay now'}
         </button>
         <button type="button" className="text-button" onClick={() => navigate('/cart')}>

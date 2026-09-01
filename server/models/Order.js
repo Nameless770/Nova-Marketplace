@@ -2,16 +2,20 @@ import mongoose from 'mongoose'
 
 const addressSnapshotSchema = new mongoose.Schema(
   {
-    firstName: { type: String, required: true, trim: true, maxlength: 80 },
-    lastName: { type: String, required: true, trim: true, maxlength: 80 },
-    // line1 now holds the captured "current location" string; city/state were
-    // removed from checkout, so all three are optional on the snapshot.
-    line1: { type: String, trim: true, maxlength: 120 },
+    // Checkout now captures a map pin rather than a typed address: the shopper's
+    // name comes from their account and the rest is reverse-geocoded from the
+    // chosen point, so every text field is optional and may be absent.
+    firstName: { type: String, trim: true, maxlength: 80 },
+    lastName: { type: String, trim: true, maxlength: 80 },
+    line1: { type: String, trim: true, maxlength: 200 },
     line2: { type: String, trim: true, maxlength: 120 },
     city: { type: String, trim: true, maxlength: 80 },
     state: { type: String, trim: true, maxlength: 80 },
-    postalCode: { type: String, required: true, trim: true, maxlength: 20 },
-    country: { type: String, required: true, uppercase: true, minlength: 2, maxlength: 2 },
+    postalCode: { type: String, trim: true, maxlength: 20 },
+    country: { type: String, uppercase: true, minlength: 2, maxlength: 2 },
+    // The delivery point itself — this is the authoritative destination now.
+    latitude: { type: Number, min: -90, max: 90 },
+    longitude: { type: Number, min: -180, max: 180 },
   },
   { _id: false },
 )

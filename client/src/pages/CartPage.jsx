@@ -3,11 +3,15 @@ import { Link } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { ProductImage } from '../components/ProductImage.jsx'
+import { useCart } from '../context/useCart.js'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { cartApi } from '../services/api.js'
 import { formatMoney, variantLabel } from '../utils/format.js'
 
 export function CartPage() {
+  // Mutations go through the shared cart context so the navbar badge stays in
+  // step with edits made here, not just those made from a product card.
+  const { setQuantity, removeItem, refresh } = useCart()
   const load = useCallback(() => cartApi.get(), [])
   const { data, status, error, reload } = useApiQuery(load, { cart: { items: [] } })
   if (status === 'loading' || status === 'idle') return <LoadingState label="Loading cart" />
@@ -23,12 +27,14 @@ export function CartPage() {
         </Link>
       </div>
     )
+  // Stepping below one removes the line entirely, so pressing − at a quantity of
+  // 1 takes the product out of the basket rather than sticking at 1.
   async function update(item, quantity) {
-    await cartApi.update(item._id, quantity)
+    await setQuantity(item._id, quantity)
     reload()
   }
   async function remove(item) {
-    await cartApi.remove(item._id)
+    await removeItem(item._id)
     reload()
   }
   return (
@@ -42,6 +48,7 @@ export function CartPage() {
           className="secondary-action"
           onClick={async () => {
             await cartApi.clear()
+            await refresh()
             reload()
           }}
         >
@@ -69,9 +76,17 @@ export function CartPage() {
               </strong>
             </div>
             <div className="quantity">
-              <button onClick={() => update(item, Math.max(1, item.quantity - 1))}>−</button>
+              <button
+                onClick={() => update(item, item.quantity - 1)}
+                aria-label={item.quantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                title={item.quantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
+              >
+                −
+              </button>
               <strong>{item.quantity}</strong>
-              <button onClick={() => update(item, item.quantity + 1)}>+</button>
+              <button onClick={() => update(item, item.quantity + 1)} aria-label="Increase quantity">
+                +
+              </button>
             </div>
             <strong>{formatMoney(item.lineSubtotalMinor, cart.currency)}</strong>
             <button className="text-button" onClick={() => remove(item)}>

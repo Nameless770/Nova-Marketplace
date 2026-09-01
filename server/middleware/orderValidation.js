@@ -1,18 +1,23 @@
 import { AppError } from '../utils/errors.js'
 
-// Street line, city and state were dropped from checkout in favour of "send to
-// my current location", so they are no longer required. line1 still carries the
-// captured location string when present.
-const fields = ['firstName', 'lastName', 'postalCode', 'country']
+// Checkout captures a map pin instead of a typed address, so the delivery point
+// is what must be present: a pair of coordinates, or a resolved line1 for an
+// address supplied some other way. Everything else is optional and only checked
+// for shape when it is provided.
+function validCoordinate(value, limit) {
+  return typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= limit
+}
 
 function validateAddress(address, name) {
   if (!address || typeof address !== 'object') return `${name} is required`
-  const errors = fields.filter(
-    (field) => typeof address[field] !== 'string' || !address[field].trim(),
-  )
-  if (address.country && !/^[a-z]{2}$/i.test(address.country))
-    errors.push(`${name}.country must be a 2-letter ISO code`)
-  return errors.length ? `${name} is invalid` : null
+
+  const hasPoint = validCoordinate(address.latitude, 90) && validCoordinate(address.longitude, 180)
+  const hasLine = typeof address.line1 === 'string' && address.line1.trim().length > 0
+  if (!hasPoint && !hasLine) return `${name} needs a delivery location`
+
+  if (address.country !== undefined && !/^[a-z]{2}$/i.test(address.country))
+    return `${name}.country must be a 2-letter ISO code`
+  return null
 }
 
 export function validateCreateOrder(request, _response, next) {
