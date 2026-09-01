@@ -13,11 +13,26 @@ import { User } from '../models/User.js'
 import { AppError } from '../utils/errors.js'
 import { calculateCoupon, reserveCoupon } from './couponService.js'
 
+// Fulfilment order of the happy path, used to roll several seller orders up
+// into the single status the customer tracks.
+const STATUS_RANK = [
+  'pending',
+  'confirmed',
+  'processing',
+  'shipped',
+  'out_for_delivery',
+  'delivered',
+]
+
 const transitions = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped: ['delivered'],
+  // Out for delivery is the last hop before hand-off. It stays optional so a
+  // seller who does not track that granularity can still go straight to
+  // delivered.
+  shipped: ['out_for_delivery', 'delivered'],
+  out_for_delivery: ['delivered'],
   delivered: ['refunded'],
   cancelled: [],
   refunded: [],
@@ -362,16 +377,25 @@ export async function updateSellerOrderStatus(userId, sellerOrderId, status) {
   sellerOrder.status = status
   await sellerOrder.save()
   const sellerOrders = await SellerOrder.find({ orderId: sellerOrder.orderId }).lean()
-  const parentStatus = sellerOrders.every((item) => item.status === 'delivered')
-    ? 'delivered'
-    : sellerOrders.some((item) => item.status === 'shipped')
-      ? 'shipped'
-      : sellerOrders.some((item) => ['processing', 'confirmed'].includes(item.status))
-        ? 'processing'
-        : 'confirmed'
+  // An order spanning several sellers is only as far along as its least-advanced
+  // part: if one seller has shipped and another is still packing, the customer's
+  // order has not shipped. Cancelled/refunded parts are excluded so they cannot
+  // hold the rest of the order back.
+  const live = sellerOrders.filter((item) => !['cancelled', 'refunded'].includes(item.status))
+  const parentStatus = live.length
+    ? STATUS_RANK[Math.min(...live.map((item) => STATUS_RANK.indexOf(item.status)))]
+    : sellerOrder.status
+  // `$ne: parentStatus` makes this a no-op when the rolled-up status has not
+  // moved, so the customer's tracking timeline gets one entry per real step.
   await Order.updateOne(
-    { _id: sellerOrder.orderId, status: { $nin: ['cancelled', 'refunded'] } },
-    { $set: { status: parentStatus } },
+    {
+      _id: sellerOrder.orderId,
+      status: { $nin: ['cancelled', 'refunded'], $ne: parentStatus },
+    },
+    {
+      $set: { status: parentStatus },
+      $push: { statusHistory: { status: parentStatus, at: new Date() } },
+    },
   )
   return sellerOrder
 }

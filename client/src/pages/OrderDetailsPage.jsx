@@ -2,7 +2,9 @@ import { useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
+import { OrderTracker } from '../components/OrderTracker.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
+import { ORDER_STATUS_LABELS } from '../utils/orderStatus.js'
 import { orderApi } from '../services/api.js'
 import { formatMoney, variantLabel } from '../utils/format.js'
 
@@ -17,8 +19,9 @@ export function OrderDetailsPage() {
   return (
     <section>
       <p className="eyebrow">Order {order.orderNumber}</p>
-      <h2>{order.status}</h2>
+      <h2>{ORDER_STATUS_LABELS[order.status] ?? order.status}</h2>
       <p className="order-total">{formatMoney(order.totalMinor, order.currency)}</p>
+      <OrderTracker status={order.status} statusHistory={order.statusHistory} />
       <div className="stack-list">
         {(data.items || []).map((item) => (
           <article className="line-item" key={item._id}>

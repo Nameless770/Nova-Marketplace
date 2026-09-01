@@ -5,13 +5,29 @@ import { AppError } from '../../utils/errors.js'
 // through callStructuredTool, so there is exactly one egress point to audit.
 const DEFAULT_MODEL = 'claude-opus-5'
 
+// `output_config.effort` is only accepted by the larger/newer models — Haiku 4.5
+// and Sonnet 4.5 reject it with a 400. Gating it here lets AI_MODEL point at a
+// cheap model without every call failing.
+const MODELS_WITHOUT_EFFORT = /haiku|sonnet-4-5|claude-3/i
+
+function effortConfig(effort) {
+  return MODELS_WITHOUT_EFFORT.test(aiModel()) ? {} : { output_config: { effort } }
+}
+
 let client = null
 
 function anthropic() {
   if (!process.env.ANTHROPIC_API_KEY)
     throw new AppError(503, 'AI_NOT_CONFIGURED', 'The AI assistant is not configured')
   // Constructed lazily so importing this module never requires a key.
-  if (!client) client = new Anthropic()
+  if (!client) {
+    // An identity-linked API key must name the workspace it acts in; a
+    // workspace-scoped key does not and simply ignores the header's absence.
+    const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID?.trim()
+    client = new Anthropic(
+      workspaceId ? { defaultHeaders: { 'anthropic-workspace-id': workspaceId } } : {},
+    )
+  }
   return client
 }
 
@@ -28,8 +44,25 @@ function mapProviderError(error) {
     return new AppError(429, 'AI_RATE_LIMITED', 'The assistant is busy. Try again shortly.')
   if (error instanceof Anthropic.AuthenticationError)
     return new AppError(503, 'AI_NOT_CONFIGURED', 'The AI assistant is not configured')
-  if (error instanceof Anthropic.BadRequestError)
+  // A billing or workspace problem arrives as a generic 400. Surfacing it as
+  // "could not process that request" sends whoever is debugging down the wrong
+  // path entirely, so these two get their own message.
+  if (error instanceof Anthropic.BadRequestError) {
+    const detail = String(error.message ?? '')
+    if (/credit balance/i.test(detail))
+      return new AppError(
+        503,
+        'AI_NOT_CONFIGURED',
+        'The assistant is unavailable: the API account is out of credit.',
+      )
+    if (/workspace/i.test(detail))
+      return new AppError(
+        503,
+        'AI_NOT_CONFIGURED',
+        'The assistant is unavailable: the API key needs a workspace id.',
+      )
     return new AppError(502, 'AI_REQUEST_REJECTED', 'The assistant could not process that request')
+  }
   if (error instanceof Anthropic.APIError)
     return new AppError(502, 'AI_UNAVAILABLE', 'The assistant is temporarily unavailable')
   return error
@@ -65,7 +98,7 @@ export async function runToolLoop({
       const response = await anthropic().messages.create({
         model: aiModel(),
         max_tokens: maxTokens,
-        output_config: { effort },
+        ...effortConfig(effort),
         system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
         tools,
         messages,
@@ -130,7 +163,7 @@ export async function callStructuredTool({
     const response = await anthropic().messages.create({
       model: aiModel(),
       max_tokens: maxTokens,
-      output_config: { effort },
+      ...effortConfig(effort),
       // Static system prompt first so the cached prefix stays stable across
       // requests; only the user turn varies.
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],

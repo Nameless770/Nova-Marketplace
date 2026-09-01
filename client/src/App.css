@@ -444,7 +444,8 @@ h2 {
   border-color: var(--primary);
   font-weight: 600;
 }
-.product-card .qty-stepper {
+/* Shared by the product cards and the product detail page. */
+.qty-stepper {
   margin-top: var(--s-md);
   min-height: 40px;
   display: grid;
@@ -454,7 +455,7 @@ h2 {
   border-radius: var(--r-md);
   overflow: hidden;
 }
-.product-card .qty-stepper button {
+.qty-stepper button {
   margin: 0;
   min-height: 0;
   padding: 0;
@@ -466,12 +467,17 @@ h2 {
   line-height: 1;
   cursor: pointer;
 }
-.product-card .qty-stepper button:hover {
+.qty-stepper button:hover {
   filter: brightness(0.96);
 }
-.product-card .qty-stepper button:disabled {
+.qty-stepper button:disabled {
   opacity: 0.7;
   cursor: default;
+}
+/* On the detail page the stepper sits inline beside the wishlist button. */
+.action-row .qty-stepper {
+  margin-top: 0;
+  min-width: 150px;
 }
 .qty-value {
   display: grid;
@@ -798,6 +804,291 @@ h2 {
   margin: 0 0 var(--s-xs);
   font-size: 16px;
   font-weight: 600;
+}
+
+/* ---- Shopping assistant ---- */
+.assistant-intro {
+  max-width: 62ch;
+  margin: var(--s-md) 0 var(--s-xl);
+  color: var(--muted);
+  line-height: 1.6;
+}
+.assistant-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-xs);
+  max-width: 760px;
+}
+.assistant-form input {
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 16px;
+}
+.assistant-form input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.assistant-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-xs);
+  margin-top: var(--s-md);
+  max-width: 760px;
+}
+.example-chip {
+  padding: 8px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--muted);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.example-chip:hover {
+  border-color: var(--primary);
+  color: var(--ink);
+}
+.assistant-thinking {
+  margin-top: var(--s-lg);
+  color: var(--muted);
+  font-style: italic;
+}
+.assistant-result {
+  margin-top: var(--s-xl);
+}
+/* The assistant's prose — set in the display face, since it is the one moment
+   the app speaks in sentences rather than labels. */
+.assistant-message {
+  max-width: 62ch;
+  margin: 0 0 var(--s-lg);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.assistant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--s-md);
+}
+.assistant-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface-card);
+}
+.assistant-card-image {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--surface-cream-strong);
+}
+.assistant-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.assistant-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--s-lg);
+}
+.assistant-card-body a {
+  text-decoration: none;
+}
+.assistant-card h3 {
+  margin: var(--s-xs) 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+.assistant-reason {
+  flex: 1;
+  margin: 0 0 var(--s-md);
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.assistant-oos {
+  margin: var(--s-xs) 0 0;
+  color: var(--coral);
+  font-size: 12px;
+  font-weight: 600;
+}
+.assistant-card .add-to-cart {
+  margin-top: var(--s-md);
+  min-height: 40px;
+  padding: 12px 20px;
+  border: 1px solid var(--primary);
+  border-radius: var(--r-md);
+  background: var(--primary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+.assistant-card .add-to-cart:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---- Order tracking ---- */
+.order-tracker {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  margin: var(--s-lg) 0 var(--s-xl);
+  padding: 0;
+  list-style: none;
+}
+.tracker-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 30px;
+  text-align: center;
+}
+/* The connecting rail, drawn behind each marker. */
+.tracker-step::before {
+  content: '';
+  position: absolute;
+  top: 11px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--hairline);
+}
+.tracker-step:first-child::before {
+  left: 50%;
+  width: 50%;
+}
+.tracker-step:last-child::before {
+  width: 50%;
+}
+.tracker-step.is-done::before,
+.tracker-step.is-current::before {
+  background: var(--primary);
+}
+/* The current step's rail is only filled up to its own marker. */
+.tracker-step.is-current::before {
+  width: 50%;
+}
+.tracker-step.is-current:first-child::before {
+  width: 0;
+}
+.tracker-marker {
+  position: absolute;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--canvas);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+.tracker-step.is-done .tracker-marker {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.tracker-step.is-current .tracker-marker {
+  border-color: var(--primary);
+  background: var(--canvas);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.tracker-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.tracker-step.is-done .tracker-label,
+.tracker-step.is-current .tracker-label {
+  color: var(--ink);
+}
+.tracker-blurb {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.tracker-halted {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: var(--s-lg) 0 var(--s-xl);
+  padding: var(--s-md) var(--s-lg);
+  border-left: 3px solid var(--coral);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: var(--surface-card);
+}
+.tracker-halted span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+/* Status pill on the orders list. */
+.status-pill {
+  padding: 4px 11px;
+  border-radius: var(--r-pill);
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.status-pill.status-delivered {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+.status-pill.status-cancelled,
+.status-pill.status-refunded {
+  color: var(--muted);
+}
+@media (max-width: 720px) {
+  /* Stack the tracker vertically on narrow screens, with the rail on the left. */
+  .order-tracker {
+    grid-auto-flow: row;
+    gap: var(--s-xs);
+  }
+  .tracker-step {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 0 0 36px;
+    min-height: 40px;
+    text-align: left;
+  }
+  .tracker-step::before {
+    top: 0;
+    left: 11px;
+    width: 2px;
+    height: 100%;
+  }
+  .tracker-step:first-child::before,
+  .tracker-step:last-child::before,
+  .tracker-step.is-current::before {
+    left: 11px;
+    width: 2px;
+  }
+  .tracker-step.is-current::before {
+    height: 50%;
+  }
+  .tracker-marker {
+    left: 0;
+  }
 }
 .location-picker {
   display: flex;

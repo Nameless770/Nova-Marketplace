@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
+import { ORDER_STATUS_LABELS } from '../utils/orderStatus.js'
 import { orderApi } from '../services/api.js'
 import { formatMoney } from '../utils/format.js'
 
@@ -25,7 +26,9 @@ export function OrdersPage() {
                 <span>{new Date(order.createdAt).toLocaleDateString()}</span>
               </div>
               <strong>{formatMoney(order.totalMinor, order.currency)}</strong>
-              <span>{order.status}</span>
+              <span className={`status-pill status-${order.status}`}>
+                {ORDER_STATUS_LABELS[order.status] ?? order.status}
+              </span>
             </Link>
           ))}
         </div>

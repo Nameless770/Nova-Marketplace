@@ -6,14 +6,27 @@ import { sellerApi } from '../../services/api.js'
 import { formatMoney } from '../../utils/format.js'
 
 // Mirrors the server-side transition map; the API re-validates every change.
+// Mirrors the server's transition map in orderService.js.
 const nextStatuses = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['processing', 'cancelled'],
   processing: ['shipped', 'cancelled'],
-  shipped: ['delivered'],
+  shipped: ['out_for_delivery', 'delivered'],
+  out_for_delivery: ['delivered'],
   delivered: [],
   cancelled: [],
   refunded: [],
+}
+
+const statusLabels = {
+  pending: 'pending',
+  confirmed: 'confirmed',
+  processing: 'processing',
+  shipped: 'shipped',
+  out_for_delivery: 'out for delivery',
+  delivered: 'delivered',
+  cancelled: 'cancelled',
+  refunded: 'refunded',
 }
 
 export function SellerOrdersPage() {
@@ -66,7 +79,9 @@ export function SellerOrdersPage() {
                 <td>{order.itemCount}</td>
                 <td>{formatMoney(order.totalMinor, 'USD')}</td>
                 <td>
-                  <span className={`pill pill-${order.status}`}>{order.status}</span>
+                  <span className={`pill pill-${order.status}`}>
+                    {statusLabels[order.status] ?? order.status}
+                  </span>
                 </td>
                 <td className="cell-actions">
                   {(nextStatuses[order.status] ?? []).map((next) => (
@@ -77,7 +92,7 @@ export function SellerOrdersPage() {
                       disabled={pendingId === order._id}
                       onClick={() => advance(order._id, next)}
                     >
-                      Mark {next}
+                      Mark {statusLabels[next] ?? next}
                     </button>
                   ))}
                   {(nextStatuses[order.status] ?? []).length === 0 && (

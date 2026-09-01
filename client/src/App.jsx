@@ -31,6 +31,7 @@ import { SellerRevenuePage } from './pages/seller/SellerRevenuePage.jsx'
 import { SellerReviewsPage } from './pages/seller/SellerReviewsPage.jsx'
 import { SellerStorePage } from './pages/seller/SellerStorePage.jsx'
 import { ProductDetailsPage } from './pages/ProductDetailsPage.jsx'
+import { AssistantPage } from './pages/AssistantPage.jsx'
 import { CartPage } from './pages/CartPage.jsx'
 import { WishlistPage } from './pages/WishlistPage.jsx'
 import { CheckoutPage } from './pages/CheckoutPage.jsx'
@@ -51,6 +52,7 @@ function App() {
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route element={<CustomerRoute />}>
+          <Route path="assistant" element={<AssistantPage />} />
           <Route path="cart" element={<CartPage />} />
           <Route path="wishlist" element={<WishlistPage />} />
           <Route path="checkout" element={<CheckoutPage />} />

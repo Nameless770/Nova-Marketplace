@@ -4,7 +4,11 @@ import { fileURLToPath } from 'node:url'
 import { connectDatabase, disconnectDatabase } from './config/database.js'
 
 const serverDirectory = dirname(fileURLToPath(import.meta.url))
-dotenv.config({ path: join(serverDirectory, '.env') })
+// `override` so server/.env is authoritative in local development: a stale
+// ANTHROPIC_API_KEY (or similar) exported in the shell would otherwise silently
+// win and be very hard to spot. Safe in production — .env is gitignored and
+// excluded from the image, so there is no file there and real env vars stand.
+dotenv.config({ path: join(serverDirectory, '.env'), override: true })
 
 const { app } = await import('./app.js')
 const { releaseExpiredReservations } = await import('./services/inventoryService.js')

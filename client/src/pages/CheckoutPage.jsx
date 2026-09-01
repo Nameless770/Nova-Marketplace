@@ -209,7 +209,7 @@ export function CheckoutPage() {
         </div>
         {error && <ErrorState message={error} />}
         <button className="primary-action" disabled={loading || !address}>
-          {loading ? 'Processing payment' : 'Pay now'}
+          {loading ? 'Placing your order' : 'Place order · Cash on delivery'}
         </button>
         <button type="button" className="text-button" onClick={() => navigate('/cart')}>
           Back to cart

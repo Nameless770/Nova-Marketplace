@@ -81,6 +81,13 @@ export const paymentApi = {
   getCheckoutSession: (sessionId) => api.get(`/payments/checkout-sessions/${sessionId}`),
 }
 
+export const aiApi = {
+  // The model only ever picks product IDs; the server rebuilds every price,
+  // title and stock figure from the database before it reaches us.
+  shoppingAssistant: (query) => api.post('/ai/shopping-assistant', { query }),
+  search: (query) => api.post('/ai/search', { query }),
+}
+
 export const recommendationApi = {
   forYou: (params) => api.get('/recommendations/for-you', { params }),
   similar: (productId, params) =>

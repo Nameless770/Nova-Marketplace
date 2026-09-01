@@ -5,6 +5,7 @@ import { LoadingState } from '../components/LoadingState.jsx'
 import { useApiQuery } from '../hooks/useApiQuery.js'
 import { paymentApi } from '../services/api.js'
 import { formatMoney } from '../utils/format.js'
+import { ORDER_STATUS_LABELS } from '../utils/orderStatus.js'
 
 export function PaymentSuccessPage() {
   const [searchParams] = useSearchParams()
@@ -26,19 +27,19 @@ export function PaymentSuccessPage() {
 
   return (
     <section className="state-panel">
-      <p className="eyebrow">Payment returned</p>
-      <h2>{paid ? 'Payment confirmed' : 'Payment is being processed'}</h2>
+      <p className="eyebrow">Order placed</p>
+      <h2>{paid ? 'Order confirmed' : 'Order received'}</h2>
       <p>
         {paid
-          ? 'Your payment went through and your order is confirmed.'
-          : 'Your payment is still being processed. This page will reflect the final status.'}
+          ? 'Your order is confirmed. Pay the courier in cash when it arrives.'
+          : 'Your order has been received and is being confirmed.'}
       </p>
       {order && (
         <div className="summary-lines">
           <span>{order.orderNumber}</span>
           <strong>{formatMoney(order.totalMinor, order.currency)}</strong>
-          <span>Order status: {order.status}</span>
-          <span>Payment status: {payment?.status}</span>
+          <span>Order status: {ORDER_STATUS_LABELS[order.status] ?? order.status}</span>
+          <span>Payment: cash on delivery</span>
         </div>
       )}
       {order && (

@@ -6,6 +6,7 @@ import { InventoryReservation } from '../models/InventoryReservation.js'
 import { Order } from '../models/Order.js'
 import { OrderItem } from '../models/OrderItem.js'
 import { Payment } from '../models/Payment.js'
+import { SellerOrder } from '../models/SellerOrder.js'
 import { WebhookEvent } from '../models/WebhookEvent.js'
 import { AppError } from '../utils/errors.js'
 import { applyRedemption, releaseRedemptions } from './couponService.js'
@@ -86,6 +87,15 @@ async function settlePaymentPaid(paymentId) {
       order.paymentStatus = 'paid'
       order.status = 'confirmed'
       order.placedAt = new Date()
+      // First real step on the customer's tracking timeline.
+      order.statusHistory.push({ status: 'confirmed', at: new Date() })
+      // Payment confirms the whole order, so each seller's portion moves out of
+      // `pending` too — otherwise the seller cannot begin fulfilling it.
+      await SellerOrder.updateMany(
+        { orderId: order._id, status: 'pending' },
+        { $set: { status: 'confirmed' } },
+        { session },
+      )
       await payment.save({ session })
       await order.save({ session })
     })

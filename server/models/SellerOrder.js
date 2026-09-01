@@ -7,7 +7,16 @@ const sellerOrderSchema = new mongoose.Schema(
     sellerOrderNumber: { type: String, required: true, unique: true, trim: true },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
+      enum: [
+        'pending',
+        'confirmed',
+        'processing',
+        'shipped',
+        'out_for_delivery',
+        'delivered',
+        'cancelled',
+        'refunded',
+      ],
       default: 'pending',
       required: true,
     },

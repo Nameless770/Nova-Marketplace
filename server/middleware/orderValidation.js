@@ -34,7 +34,9 @@ export function validateCreateOrder(request, _response, next) {
 
 export function validateSellerOrderStatus(request, _response, next) {
   if (
-    !['confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].includes(request.body?.status)
+    !['confirmed', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'].includes(
+      request.body?.status,
+    )
   ) {
     return next(new AppError(400, 'VALIDATION_ERROR', 'Invalid seller order status'))
   }

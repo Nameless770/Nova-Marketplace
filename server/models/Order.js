@@ -28,9 +28,30 @@ const orderSchema = new mongoose.Schema(
     sellerIds: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Seller' }], required: true },
     status: {
       type: String,
-      enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'],
+      enum: [
+        'pending',
+        'confirmed',
+        'processing',
+        'shipped',
+        'out_for_delivery',
+        'delivered',
+        'cancelled',
+        'refunded',
+      ],
       default: 'pending',
       required: true,
+    },
+    // Append-only trail of every status the order has been through, so the
+    // customer sees when each step happened rather than just where it is now.
+    statusHistory: {
+      type: [
+        {
+          _id: false,
+          status: { type: String, required: true },
+          at: { type: Date, required: true, default: Date.now },
+        },
+      ],
+      default: () => [{ status: 'pending', at: new Date() }],
     },
     paymentStatus: {
       type: String,

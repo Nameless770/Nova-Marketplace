@@ -17,6 +17,7 @@ export function Navbar() {
       <nav aria-label="Primary navigation">
         <NavLink to="/products">Explore</NavLink>
         <NavLink to="/categories">Categories</NavLink>
+        {isShopper && <NavLink to="/assistant">Assistant</NavLink>}
         {isShopper && <NavLink to="/wishlist">Wishlist</NavLink>}
         {isShopper && <NavLink to="/orders">Orders</NavLink>}
         {user?.role === 'seller' && user.sellerApprovalStatus === 'approved' && (
