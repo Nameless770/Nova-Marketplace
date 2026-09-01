@@ -27,7 +27,11 @@ export async function assist(user, rawQuery) {
   const query = typeof rawQuery === 'string' ? rawQuery.trim() : ''
   if (!query) throw new AppError(400, 'QUERY_REQUIRED', 'A question is required')
   if (query.length > MAX_QUERY_LENGTH)
-    throw new AppError(400, 'QUERY_TOO_LONG', `Keep your question under ${MAX_QUERY_LENGTH} characters`)
+    throw new AppError(
+      400,
+      'QUERY_TOO_LONG',
+      `Keep your question under ${MAX_QUERY_LENGTH} characters`,
+    )
 
   const usage = { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0 }
   const accumulate = (turn) => {

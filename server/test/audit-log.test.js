@@ -53,8 +53,8 @@ async function paidOrderFor(customer, item, totalMinor = 10000) {
   await Payment.create({
     orderId: order._id,
     customerId: customer._id,
-    stripeSessionId: `cs_${order.orderNumber}`,
-    stripePaymentIntentId: `pi_${order.orderNumber}`,
+    providerSessionId: `cs_${order.orderNumber}`,
+    providerPaymentIntentId: `pi_${order.orderNumber}`,
     amountMinor: totalMinor,
     currency: 'USD',
     status: 'paid',
@@ -225,9 +225,7 @@ describe('audit log access', () => {
       .patch(`/api/v1/admin/audit-logs/${entry._id}`)
       .set(headers)
       .send({ action: 'tampered' })
-    const deleted = await request(app)
-      .delete(`/api/v1/admin/audit-logs/${entry._id}`)
-      .set(headers)
+    const deleted = await request(app).delete(`/api/v1/admin/audit-logs/${entry._id}`).set(headers)
 
     expect(patched.status).toBe(404)
     expect(deleted.status).toBe(404)

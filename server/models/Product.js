@@ -1,8 +1,18 @@
 import mongoose from 'mongoose'
+import { IMAGE_URL_MESSAGE, MAX_URL_LENGTH, isSafeImageUrl } from '../utils/url.js'
 
 const imageSchema = new mongoose.Schema(
   {
-    url: { type: String, required: true, trim: true, maxlength: 2048 },
+    // Scheme-checked here as well as in request validation: images also arrive
+    // from seed scripts and maintenance jobs, which never pass through the HTTP
+    // middleware.
+    url: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: MAX_URL_LENGTH,
+      validate: [isSafeImageUrl, `Image url ${IMAGE_URL_MESSAGE}`],
+    },
     storageKey: { type: String, trim: true, maxlength: 512 },
     alt: { type: String, trim: true, maxlength: 160, default: '' },
   },

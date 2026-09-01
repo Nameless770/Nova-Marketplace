@@ -32,9 +32,7 @@ export function SellerProductFormPage() {
 
   const loadProduct = useCallback(
     () =>
-      isEdit
-        ? sellerCatalogApi.getProduct(productId)
-        : Promise.resolve({ data: { data: null } }),
+      isEdit ? sellerCatalogApi.getProduct(productId) : Promise.resolve({ data: { data: null } }),
     [isEdit, productId],
   )
   const { data: productData, status: productStatus, reload } = useApiQuery(loadProduct, null)
@@ -171,7 +169,9 @@ function ProductForm({ isEdit, existing, categories, onDone, navigate }) {
         <fieldset className="category-picker">
           <legend>Categories (1 to 5)</legend>
           {categories.length === 0 ? (
-            <p className="seller-subtle">No categories exist yet. An admin must create one first.</p>
+            <p className="seller-subtle">
+              No categories exist yet. An admin must create one first.
+            </p>
           ) : (
             categories.map((category) => (
               <label key={category._id} className="inline-toggle">
@@ -272,7 +272,9 @@ function VariantManager({ productId, existing }) {
       {status === 'success' && (
         <>
           {variants.length === 0 ? (
-            <p className="seller-subtle">No variants yet. Add one below so the product can be sold.</p>
+            <p className="seller-subtle">
+              No variants yet. Add one below so the product can be sold.
+            </p>
           ) : (
             <div className="table-scroll">
               <table className="seller-table">
@@ -351,7 +353,9 @@ function VariantManager({ productId, existing }) {
                 Submit for review
               </button>
             )}
-            {submitted && <span className="seller-saved">Submitted — an admin will review it.</span>}
+            {submitted && (
+              <span className="seller-saved">Submitted — an admin will review it.</span>
+            )}
           </div>
         </>
       )}

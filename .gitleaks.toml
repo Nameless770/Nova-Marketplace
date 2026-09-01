@@ -1,0 +1,44 @@
+# Secret scanning configuration.
+#
+# Starts from gitleaks' own rule set and adds the two shapes this project has
+# actually leaked or handles: a MongoDB connection string with inline
+# credentials, and model-provider API keys.
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "mongodb-connection-credentials"
+description = "MongoDB connection string with an inline username and password"
+# Placeholder templates (<username>:<password>) must not trip this, or the
+# noise trains people to ignore the alerts.
+regex = '''mongodb(\+srv)?://[^\s:<>"']+:[^\s@<>"']+@'''
+tags = ["database", "credentials"]
+
+[[rules]]
+id = "model-provider-api-key"
+description = "Anthropic or OpenRouter API key"
+regex = '''\b(sk-ant-[A-Za-z0-9_-]{20,}|sk-or-v\d-[A-Za-z0-9]{20,})\b'''
+tags = ["api-key"]
+
+[allowlist]
+description = "Placeholders, and one historical finding that is already remediated"
+
+# Angle-bracket and obvious placeholder values. Template files are NOT
+# path-allowlisted: `server/.env.example` is precisely where the real credential
+# was committed, so exempting the whole file would re-open the hole this scan
+# exists to close. The placeholder regexes below are what keep templates quiet.
+regexes = [
+  '''<username>:<password>''',
+  '''USER:PASS''',
+  '''REPLACE_ME''',
+  '''sk-ant-\.\.\.''',
+]
+
+# A live MongoDB password was committed here and later scrubbed from the file.
+# The credential has since been **rotated**, which is what actually neutralises a
+# leak — verified by comparing it against the one now in use. It is baselined by
+# commit rather than left to fail, because a scan that always fails on a known
+# dead finding is one people switch off, and then the next real secret sails
+# through. Every other commit is still scanned.
+commits = ["7c910fbc3b8bd000d56dd762a528e17bbeb89dc7"]

@@ -42,7 +42,9 @@ export function AdminOverviewPage() {
         ))}
       </div>
 
-      {(status === 'loading' || status === 'idle') && <LoadingState label="Loading platform data" />}
+      {(status === 'loading' || status === 'idle') && (
+        <LoadingState label="Loading platform data" />
+      )}
       {status === 'error' && <ErrorState message={error} onRetry={reload} />}
 
       {status === 'success' && data && (

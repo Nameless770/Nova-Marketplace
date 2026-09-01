@@ -49,8 +49,8 @@ async function createPayableOrder() {
   const payment = await Payment.create({
     orderId: order._id,
     customerId: customer._id,
-    stripeSessionId: 'cs_test_webhook',
-    stripeCheckoutUrl: 'https://checkout.stripe.test/session',
+    providerSessionId: 'cs_test_webhook',
+    providerCheckoutUrl: 'https://checkout.stripe.test/session',
     amountMinor: 1000,
     currency: 'USD',
     idempotencyKey: 'payment-webhook-key',
@@ -78,7 +78,7 @@ describe('stripe webhook processing', () => {
     const payload = JSON.stringify({
       id: 'evt_completed',
       type: 'checkout.session.completed',
-      data: { object: { id: payment.stripeSessionId, payment_status: 'paid' } },
+      data: { object: { id: payment.providerSessionId, payment_status: 'paid' } },
     })
 
     const response = await request(app)
@@ -106,7 +106,7 @@ describe('stripe webhook processing', () => {
     const payload = JSON.stringify({
       id: 'evt_duplicate',
       type: 'checkout.session.completed',
-      data: { object: { id: payment.stripeSessionId, payment_status: 'paid' } },
+      data: { object: { id: payment.providerSessionId, payment_status: 'paid' } },
     })
     const signature = signedHeader(payload)
 

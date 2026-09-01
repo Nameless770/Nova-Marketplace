@@ -52,12 +52,16 @@ function Recommendation({ item }) {
         <div className="product-meta">
           <strong>{formatMoney(item.priceMinor, item.currency)}</strong>
           <span>
-            {formatRating(item.ratingAverage)} / 5
-            {item.ratingCount ? ` · ${item.ratingCount}` : ''}
+            {formatRating(item.ratingAverage)} / 5{item.ratingCount ? ` · ${item.ratingCount}` : ''}
           </span>
         </div>
         {!item.inStock && <p className="assistant-oos">Out of stock</p>}
-        <button type="button" className="add-to-cart" onClick={add} disabled={state === 'busy' || !item.inStock}>
+        <button
+          type="button"
+          className="add-to-cart"
+          onClick={add}
+          disabled={state === 'busy' || !item.inStock}
+        >
           {{ idle: 'Add to cart', busy: 'Adding…', added: 'Added ✓', error: 'Try again' }[state]}
         </button>
       </div>
@@ -128,7 +132,12 @@ export function AssistantPage() {
       {status === 'idle' && (
         <div className="assistant-examples">
           {EXAMPLES.map((example) => (
-            <button key={example} type="button" className="example-chip" onClick={() => askExample(example)}>
+            <button
+              key={example}
+              type="button"
+              className="example-chip"
+              onClick={() => askExample(example)}
+            >
               {example}
             </button>
           ))}

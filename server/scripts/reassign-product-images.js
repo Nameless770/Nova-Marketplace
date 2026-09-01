@@ -30,7 +30,12 @@ const ops = products.map((p) => {
   return {
     updateOne: {
       filter: { _id: p._id },
-      update: { $set: { 'images.0.url': imageForCategory(slug, p.slug || p.title || ''), 'images.0.alt': p.title } },
+      update: {
+        $set: {
+          'images.0.url': imageForCategory(slug, p.slug || p.title || ''),
+          'images.0.alt': p.title,
+        },
+      },
     },
   }
 })

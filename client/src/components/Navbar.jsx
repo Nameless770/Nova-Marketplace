@@ -30,8 +30,22 @@ export function Navbar() {
           <>
             <span className="account-label">Hi, {user.firstName}</span>
             {isShopper && (
-              <Link className="cart-icon" to="/cart" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <Link
+                className="cart-icon"
+                to="/cart"
+                aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <circle cx="9" cy="20" r="1.4" />
                   <circle cx="18" cy="20" r="1.4" />
                   <path d="M2.5 3.5h2.2l2.2 11.2a1.8 1.8 0 0 0 1.8 1.4h8.3a1.8 1.8 0 0 0 1.8-1.4L21.5 7H6" />

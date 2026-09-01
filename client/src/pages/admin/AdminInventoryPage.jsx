@@ -41,7 +41,11 @@ export function AdminInventoryPage() {
           { key: 'status', label: 'Status', options: ['active', 'out_of_stock'] },
         ]}
       />
-      <AdminTable table={table} columns={columns} emptyLabel="No inventory matches these filters." />
+      <AdminTable
+        table={table}
+        columns={columns}
+        emptyLabel="No inventory matches these filters."
+      />
       <Pagination table={table} />
     </section>
   )

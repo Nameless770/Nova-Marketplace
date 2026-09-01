@@ -44,7 +44,11 @@ export function OrderTracker({ status, statusHistory = [] }) {
                 : 'upcoming'
         const when = formatWhen(reachedAt.get(stage.key))
         return (
-          <li key={stage.key} className={`tracker-step is-${state}`} aria-current={state === 'current' ? 'step' : undefined}>
+          <li
+            key={stage.key}
+            className={`tracker-step is-${state}`}
+            aria-current={state === 'current' ? 'step' : undefined}
+          >
             <span className="tracker-marker" aria-hidden="true">
               {state === 'done' ? '✓' : ''}
             </span>

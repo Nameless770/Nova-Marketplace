@@ -18,6 +18,7 @@ import refundRoutes from './routes/refundRoutes.js'
 import reviewRoutes from './routes/reviewRoutes.js'
 import qaRoutes from './routes/qaRoutes.js'
 import couponRoutes from './routes/couponRoutes.js'
+import { globalRateLimit } from './middleware/rateLimit.js'
 import { stripeWebhook } from './controllers/paymentController.js'
 import { asyncHandler } from './utils/errors.js'
 import userRoutes from './routes/userRoutes.js'
@@ -40,6 +41,11 @@ app.post(
   asyncHandler(stripeWebhook),
 )
 app.use(express.json({ limit: '1mb' }))
+
+// A ceiling over everything, mounted before the routers so no route can be
+// reached without passing it. Per-route limits stay on top for the endpoints
+// that need something tighter. Configurable so a load test can raise it.
+app.use(globalRateLimit({ max: Number(process.env.GLOBAL_RATE_LIMIT_MAX) || 600 }))
 
 app.get('/', (_request, response) => {
   response.json({

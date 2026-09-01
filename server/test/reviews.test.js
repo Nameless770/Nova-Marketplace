@@ -156,9 +156,9 @@ describe('review input validation', () => {
     await buyItem(customer, item)
 
     expect((await postReview(customer, item.product._id, { text: '   ' })).status).toBe(400)
-    expect(
-      (await postReview(customer, item.product._id, { text: 'x'.repeat(5001) })).status,
-    ).toBe(400)
+    expect((await postReview(customer, item.product._id, { text: 'x'.repeat(5001) })).status).toBe(
+      400,
+    )
   })
 })
 

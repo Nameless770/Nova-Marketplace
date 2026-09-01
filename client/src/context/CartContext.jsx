@@ -35,7 +35,8 @@ export function CartProvider({ children }) {
 
   // A quantity below one removes the line entirely.
   const setQuantity = useCallback(async (itemId, quantity) => {
-    const response = quantity < 1 ? await cartApi.remove(itemId) : await cartApi.update(itemId, quantity)
+    const response =
+      quantity < 1 ? await cartApi.remove(itemId) : await cartApi.update(itemId, quantity)
     setItems(response.data.data.cart?.items ?? [])
   }, [])
 

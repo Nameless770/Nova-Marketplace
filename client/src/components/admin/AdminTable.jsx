@@ -31,10 +31,7 @@ export function AdminTable({ table, columns, emptyLabel = 'Nothing to show.', ro
                     onClick={() => toggleSort(column.key)}
                   >
                     {column.header}
-                    <SortIndicator
-                      active={sort.sortBy === column.key}
-                      direction={sort.sortDir}
-                    />
+                    <SortIndicator active={sort.sortBy === column.key} direction={sort.sortDir} />
                   </button>
                 ) : (
                   column.header

@@ -71,8 +71,8 @@ function App() {
             <Route path="revenue" element={<SellerRevenuePage />} />
             <Route path="orders" element={<SellerOrdersPage />} />
             <Route path="products" element={<SellerProductsPage />} />
-          <Route path="products/new" element={<SellerProductFormPage />} />
-          <Route path="products/:productId" element={<SellerProductFormPage />} />
+            <Route path="products/new" element={<SellerProductFormPage />} />
+            <Route path="products/:productId" element={<SellerProductFormPage />} />
             <Route path="inventory" element={<SellerInventoryPage />} />
             <Route path="reviews" element={<SellerReviewsPage />} />
             <Route path="store" element={<SellerStorePage />} />

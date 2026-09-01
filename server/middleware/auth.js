@@ -1,3 +1,4 @@
+import { Seller } from '../models/Seller.js'
 import { User } from '../models/User.js'
 import { AppError } from '../utils/errors.js'
 import { verifyAccessToken } from '../utils/jwt.js'
@@ -48,14 +49,37 @@ export async function optionalAuthenticate(request, _response, next) {
   next()
 }
 
+/**
+ * Role gate. For sellers it additionally requires an approved store.
+ *
+ * Approval is read from the `Seller` collection, which is the single source of
+ * truth. `user.sellerApprovalStatus` mirrors it for display, but authorising
+ * against that copy would mean a suspended seller keeps access for as long as
+ * the two disagree — and the services downstream already scope on `Seller`, so
+ * checking anything else here just invites them to drift apart.
+ */
 export function authorize(...roles) {
-  return (request, _response, next) => {
-    const sellerIsApproved =
-      request.user?.role !== 'seller' || request.user.sellerApprovalStatus === 'approved'
+  return async (request, _response, next) => {
+    try {
+      if (!request.user || !roles.includes(request.user.role)) {
+        throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
+      }
 
-    if (!request.user || !roles.includes(request.user.role) || !sellerIsApproved) {
-      return next(new AppError(403, 'FORBIDDEN', 'Insufficient permissions'))
+      if (request.user.role === 'seller') {
+        // Indexed unique lookup on ownerUserId — cheap, and only on seller routes.
+        const seller = await Seller.findOne({ ownerUserId: request.user._id })
+          .select('_id status')
+          .lean()
+        if (seller?.status !== 'approved') {
+          throw new AppError(403, 'FORBIDDEN', 'Insufficient permissions')
+        }
+        // Hand the resolved seller downstream so services need not re-query it.
+        request.seller = seller
+      }
+
+      next()
+    } catch (error) {
+      next(error)
     }
-    next()
   }
 }

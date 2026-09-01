@@ -10,9 +10,8 @@ vi.mock('../services/ai/provider.js', () => ({
 }))
 
 const { app } = await import('../app.js')
-const { naturalLanguageSearch, clearCriteriaCache } = await import(
-  '../services/ai/nlSearchService.js'
-)
+const { naturalLanguageSearch, clearCriteriaCache } =
+  await import('../services/ai/nlSearchService.js')
 const { validateCriteria } = await import('../services/ai/searchCriteria.js')
 const { resetAiRateLimits } = await import('../middleware/aiValidation.js')
 const { Category } = await import('../models/Category.js')
@@ -117,7 +116,11 @@ describe('criteria validation is the security boundary', () => {
   })
 
   it('turns vague budget wording into ordering, never an invented number', async () => {
-    const { query } = await validateCriteria({ ...NOTHING, keywords: 'laptop', pricePreference: 'cheap' })
+    const { query } = await validateCriteria({
+      ...NOTHING,
+      keywords: 'laptop',
+      pricePreference: 'cheap',
+    })
     expect(query.maxPrice).toBeUndefined()
     expect(query.sort).toBe('price_asc')
   })

@@ -257,7 +257,9 @@ export async function recommendForUser(userId, { limit = 8 } = {}) {
       ...(topBrands.length ? [{ brand: { $in: topBrands } }] : []),
     ],
   })
-    .select('title brand categoryIds currentPriceMinor minPriceMinor currency ratingAverage ratingCount images sellerId')
+    .select(
+      'title brand categoryIds currentPriceMinor minPriceMinor currency ratingAverage ratingCount images sellerId',
+    )
     .limit(MAX_CANDIDATES)
     .lean()
 
@@ -401,7 +403,9 @@ export async function similarProducts(productId, { limit = 6 } = {}) {
       ...(seed.brand ? [{ brand: seed.brand }] : []),
     ],
   })
-    .select('title brand categoryIds currentPriceMinor minPriceMinor currency ratingAverage ratingCount images sellerId')
+    .select(
+      'title brand categoryIds currentPriceMinor minPriceMinor currency ratingAverage ratingCount images sellerId',
+    )
     .limit(MAX_CANDIDATES)
     .lean()
 

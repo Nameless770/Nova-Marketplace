@@ -149,15 +149,19 @@ export function ProductDetailsPage() {
         )}
         {!user && (
           <div className="action-row">
-            <Link className="primary-action" to="/login" state={{ from: `/products/${product._id}` }}>
+            <Link
+              className="primary-action"
+              to="/login"
+              state={{ from: `/products/${product._id}` }}
+            >
               Sign in to buy
             </Link>
           </div>
         )}
         {user && !isShopper && (
           <p className="role-note">
-            You are signed in as {user.role === 'admin' ? 'an administrator' : 'a seller'}.
-            Shopping is available on customer accounts.
+            You are signed in as {user.role === 'admin' ? 'an administrator' : 'a seller'}. Shopping
+            is available on customer accounts.
           </p>
         )}
         {actionError && <ErrorState message={actionError} />}
@@ -169,9 +173,6 @@ export function ProductDetailsPage() {
 }
 
 function SimilarProducts({ productId }) {
-  const fetcher = useCallback(
-    () => recommendationApi.similar(productId, { limit: 6 }),
-    [productId],
-  )
+  const fetcher = useCallback(() => recommendationApi.similar(productId, { limit: 6 }), [productId])
   return <RecommendationShelf title="Similar products" fetcher={fetcher} />
 }

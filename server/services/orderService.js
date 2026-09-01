@@ -12,6 +12,7 @@ import { SellerOrder } from '../models/SellerOrder.js'
 import { User } from '../models/User.js'
 import { AppError } from '../utils/errors.js'
 import { calculateCoupon, reserveCoupon } from './couponService.js'
+import { notifyOrderStatus } from './notificationService.js'
 
 // Fulfilment order of the happy path, used to roll several seller orders up
 // into the single status the customer tracks.
@@ -387,7 +388,7 @@ export async function updateSellerOrderStatus(userId, sellerOrderId, status) {
     : sellerOrder.status
   // `$ne: parentStatus` makes this a no-op when the rolled-up status has not
   // moved, so the customer's tracking timeline gets one entry per real step.
-  await Order.updateOne(
+  const rollup = await Order.findOneAndUpdate(
     {
       _id: sellerOrder.orderId,
       status: { $nin: ['cancelled', 'refunded'], $ne: parentStatus },
@@ -396,6 +397,22 @@ export async function updateSellerOrderStatus(userId, sellerOrderId, status) {
       $set: { status: parentStatus },
       $push: { statusHistory: { status: parentStatus, at: new Date() } },
     },
-  )
+    { new: true, projection: { customerId: 1 } },
+  ).lean()
+
+  // Only when the customer-visible status actually moved — `rollup` is null when
+  // the update matched nothing. Notifying must never fail the status change the
+  // seller just made, so failures are logged rather than thrown.
+  if (rollup) {
+    try {
+      await notifyOrderStatus(rollup.customerId, sellerOrder.orderId, parentStatus)
+    } catch (error) {
+      console.error(
+        '[notifications] order status failed',
+        String(sellerOrder.orderId),
+        error.message,
+      )
+    }
+  }
   return sellerOrder
 }

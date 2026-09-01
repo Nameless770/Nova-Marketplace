@@ -98,9 +98,7 @@ describe('taste profile', () => {
     await purchase(customer, bought)
     await Wishlist.create({
       userId: customer._id,
-      items: [
-        { productId: wished.product._id, sellerId: wished.seller._id, addedAt: new Date() },
-      ],
+      items: [{ productId: wished.product._id, sellerId: wished.seller._id, addedAt: new Date() }],
     })
     await RecentlyViewed.create({
       userId: customer._id,
@@ -165,7 +163,7 @@ describe('taste profile', () => {
 })
 
 describe('recommendations for you', () => {
-  it('recommends within the shopper\'s category and explains why', async () => {
+  it("recommends within the shopper's category and explains why", async () => {
     const customer = await createUser({ role: 'customer' })
     const audio = await Category.create({ name: 'Audio', slug: 'audio' })
     const garden = await Category.create({ name: 'Garden', slug: 'garden' })

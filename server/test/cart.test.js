@@ -10,10 +10,7 @@ import { authHeader, createCatalogItem, createUser } from './factories.js'
  * cart breaks — it is that a client can talk the server into a price.
  */
 function addToCart(actor, body) {
-  return request(app)
-    .post('/api/v1/cart/items')
-    .set('Authorization', authHeader(actor))
-    .send(body)
+  return request(app).post('/api/v1/cart/items').set('Authorization', authHeader(actor)).send(body)
 }
 
 describe('cart pricing is server-authoritative', () => {
@@ -51,9 +48,7 @@ describe('cart pricing is server-authoritative', () => {
     variant.priceMinor = 7500
     await variant.save()
 
-    const view = await request(app)
-      .get('/api/v1/cart')
-      .set('Authorization', authHeader(customer))
+    const view = await request(app).get('/api/v1/cart').set('Authorization', authHeader(customer))
 
     const line = view.body.data.cart.items[0]
     expect(line.currentPriceMinor).toBe(7500)
@@ -70,9 +65,7 @@ describe('cart pricing is server-authoritative', () => {
       quantity: 3,
     }).expect(201)
 
-    const view = await request(app)
-      .get('/api/v1/cart')
-      .set('Authorization', authHeader(customer))
+    const view = await request(app).get('/api/v1/cart').set('Authorization', authHeader(customer))
 
     expect(view.body.data.cart.subtotalMinor).toBe(7500)
   })
@@ -115,12 +108,14 @@ describe('cart validation', () => {
     })
 
     expect(response.status).toBeGreaterThanOrEqual(400)
-    expect(await Cart.countDocuments({ userId: customer._id, 'items.0': { $exists: true } })).toBe(0)
+    expect(await Cart.countDocuments({ userId: customer._id, 'items.0': { $exists: true } })).toBe(
+      0,
+    )
   })
 })
 
 describe('cart isolation', () => {
-  it('never exposes one shopper\'s cart to another', async () => {
+  it("never exposes one shopper's cart to another", async () => {
     const mine = await createUser({ role: 'customer' })
     const theirs = await createUser({ role: 'customer' })
     const item = await createCatalogItem()

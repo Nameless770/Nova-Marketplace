@@ -12,9 +12,7 @@ vi.mock('../services/ai/provider.js', () => ({
 
 const { app } = await import('../app.js')
 const { assist } = await import('../services/ai/shoppingAssistant.js')
-const { sanitizeModelProse, validateRecommendations } = await import(
-  '../services/ai/grounding.js'
-)
+const { sanitizeModelProse, validateRecommendations } = await import('../services/ai/grounding.js')
 const { Product } = await import('../models/Product.js')
 const { createCatalogItem, createUser, authHeader } = await import('./factories.js')
 
@@ -236,9 +234,7 @@ describe('shopping assistant endpoint', () => {
 
     stubTurns(baseCriteria, {
       message: 'These fit your budget and last all day.',
-      recommendations: [
-        { productId: real.product._id.toString(), reason: 'Long battery life.' },
-      ],
+      recommendations: [{ productId: real.product._id.toString(), reason: 'Long battery life.' }],
       noMatch: false,
     })
 

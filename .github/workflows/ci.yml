@@ -88,6 +88,66 @@ jobs:
           CI: true
         run: npm test
 
+  test-frontend:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix client
+
+      - name: Test
+        run: npm test --prefix client
+
+  # A live database credential was committed to this repository once. Rotation is
+  # what neutralised it, but the cheaper fix is not needing to rotate again —
+  # this fails the build on a secret before it can be merged.
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: a secret added and then "removed" in a later commit is
+          # still in the pack, and is exactly the case that got missed before.
+          fetch-depth: 0
+
+      - name: Scan history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  # Dependency and container scanning. Publishing an image without knowing what
+  # it carries is how a known CVE reaches a registry unnoticed.
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # `--omit=dev` because a vulnerability in a build-time-only package is not
+      # the same risk as one in what actually ships and runs.
+      - name: Audit production dependencies
+        run: |
+          set -o pipefail
+          for workspace in . client server; do
+            echo "::group::npm audit ($workspace)"
+            npm audit --omit=dev --audit-level=high --prefix "$workspace"
+            echo "::endgroup::"
+          done
+
   build-frontend:
     name: Build frontend
     runs-on: ubuntu-latest
@@ -147,12 +207,72 @@ jobs:
           JWT_SECRET: ci-smoke-check-secret-not-used-for-signing-anything
         run: node --input-type=module -e "await import('./app.js'); console.log('app module loaded')"
 
+  # Proves the deployment path rather than asserting it. Building an image says
+  # nothing about whether the composed stack actually serves traffic — this
+  # brings the whole thing up and asks it.
+  smoke:
+    name: Compose smoke test
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start the stack
+        run: docker compose up --build --detach --wait --wait-timeout 240
+
+      # Readiness, not liveness: this is the probe that reports whether the API
+      # can actually reach its database, which is what "deployed" has to mean.
+      - name: Wait for the API to report ready
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:5000/api/health/ready | grep -q '"status":"ready"'; then
+              echo "API ready after ${attempt} attempt(s)"
+              exit 0
+            fi
+            sleep 4
+          done
+          echo "API never became ready"
+          exit 1
+
+      - name: Serve a real request through the stack
+        run: |
+          curl -fsS "http://localhost:5000/api/v1/categories" -o /dev/null
+          echo "categories endpoint served"
+
+      # The logs are the only way to diagnose a failure here after the fact.
+      - name: Dump container logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down --volumes
+
+  # Validates the Kubernetes manifests parse and cross-reference correctly.
+  # Cheap, and it catches the class of typo that otherwise fails at apply time.
+  manifests:
+    name: Validate Kubernetes manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSfL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /tmp kubeconform
+          sudo mv /tmp/kubeconform /usr/local/bin/
+
+      # `-strict` rejects unknown fields, which is what catches a misspelled key
+      # that Kubernetes would otherwise silently ignore.
+      - name: Validate
+        run: kubeconform -strict -summary -ignore-filename-pattern '.*\.example\.yaml' k8s/
+
   images:
     name: Build and push images
     runs-on: ubuntu-latest
     # Gated on every check: an image is never published from a commit that
-    # failed lint, tests, or either build.
-    needs: [lint, test, build-frontend, build-backend]
+    # failed lint, tests, either build, the audit, or the smoke test.
+    needs: [lint, test, test-frontend, audit, build-frontend, build-backend, smoke, manifests]
     permissions:
       contents: read
       packages: write
@@ -196,6 +316,32 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
+
+      # Built locally first so it can be scanned before anything is published.
+      # The push below reuses this layer cache, so the second build is near-free.
+      - name: Build for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          load: true
+          tags: scan-target:${{ matrix.name }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          build-args: |
+            VITE_API_URL=/api/v1
+
+      # Fails the job on a HIGH or CRITICAL vulnerability that has a fix
+      # available. Unfixed findings are reported but do not block, since there is
+      # no action to take on them yet.
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: scan-target:${{ matrix.name }}
+          format: table
+          exit-code: '1'
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
 
       - name: Build and push
         uses: docker/build-push-action@v6

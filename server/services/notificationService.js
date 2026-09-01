@@ -141,3 +141,37 @@ export const notifyNewSellerOrder = (recipientUserId, sellerOrderId) =>
     relatedEntityId: sellerOrderId,
     eventKey: `seller-order:${sellerOrderId}`,
   })
+
+// Delivery progress the shopper actually cares about. Only the two milestones
+// worth interrupting someone for — not every internal transition.
+const DELIVERY_UPDATES = {
+  shipped: { type: 'order_shipped', title: 'On its way', body: 'Your order has shipped.' },
+  out_for_delivery: {
+    type: 'order_shipped',
+    title: 'Out for delivery',
+    body: 'Your order is with the courier and arrives today.',
+  },
+  delivered: {
+    type: 'order_delivered',
+    title: 'Delivered',
+    body: 'Your order has been delivered.',
+  },
+}
+
+/**
+ * Returns null for statuses that are not worth a notification, so callers can
+ * pass any status without branching.
+ */
+export function notifyOrderStatus(recipientUserId, orderId, status) {
+  const update = DELIVERY_UPDATES[status]
+  if (!update) return null
+  return createNotification({
+    recipientUserId,
+    type: update.type,
+    title: update.title,
+    body: update.body,
+    relatedEntityType: 'Order',
+    relatedEntityId: orderId,
+    eventKey: `order-${status}:${orderId}`,
+  })
+}

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { AppError } from '../../utils/errors.js'
+import { redactMessages, redactPii } from './redact.js'
 
 // The only place this process talks to the model provider. Everything else goes
 // through callStructuredTool/runToolLoop, so there is exactly one egress point
@@ -110,7 +111,13 @@ async function openAiRequest(body) {
       Authorization: `Bearer ${apiKey()}`,
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ model: aiModel(), ...body }),
+    // Redacted here rather than at each call site: this is the only place the
+    // OpenAI-compatible transport puts bytes on the wire.
+    body: JSON.stringify({
+      model: aiModel(),
+      ...body,
+      ...(body.messages ? { messages: redactMessages(body.messages) } : {}),
+    }),
   })
 
   if (!response.ok) {
@@ -223,7 +230,8 @@ export async function runToolLoop({
           ...effortConfig(effort),
           system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
           tools,
-          messages,
+          // Single egress point: strip identifiers before they leave the process.
+          messages: redactMessages(messages),
         })
         usage.inputTokens += response.usage?.input_tokens ?? 0
         usage.outputTokens += response.usage?.output_tokens ?? 0
@@ -314,7 +322,7 @@ export async function callStructuredTool({
       system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
       tools: [tool],
       tool_choice: { type: 'tool', name: tool.name },
-      messages: [{ role: 'user', content: userContent }],
+      messages: [{ role: 'user', content: redactPii(userContent) }],
     })
 
     const block = response.content.find((item) => item.type === 'tool_use')

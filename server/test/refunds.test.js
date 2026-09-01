@@ -75,8 +75,11 @@ async function buildPaidOrder({ priceMinor = 5000, quantity = 2, quantityOnHand 
   const payment = await Payment.create({
     orderId: order._id,
     customerId: customer._id,
-    stripeSessionId: `cs_${order.orderNumber}`,
-    stripePaymentIntentId: `pi_${order.orderNumber}`,
+    // A card payment: these tests exercise the processor path, where a refund
+    // stays pending until its webhook settles it.
+    provider: 'stripe',
+    providerSessionId: `cs_${order.orderNumber}`,
+    providerPaymentIntentId: `pi_${order.orderNumber}`,
     amountMinor: total,
     currency: 'USD',
     status: 'paid',
@@ -105,10 +108,15 @@ describe('refund authorization', () => {
       .send({ amountMinor: 100, reason: 'test' })
     expect(anonymous.status).toBe(401)
 
-    const asCustomer = await refundRequest(customer, order._id, {
-      amountMinor: 100,
-      reason: 'test',
-    }, 'k2')
+    const asCustomer = await refundRequest(
+      customer,
+      order._id,
+      {
+        amountMinor: 100,
+        reason: 'test',
+      },
+      'k2',
+    )
     expect(asCustomer.status).toBe(403)
     expect(await Refund.countDocuments()).toBe(0)
   })
@@ -255,7 +263,12 @@ describe('refund idempotency', () => {
     const { order } = await buildPaidOrder({ priceMinor: 5000, quantity: 2 })
 
     const first = await refundRequest(admin, order._id, { amountMinor: 2500, reason: 'dup' }, 'dup')
-    const second = await refundRequest(admin, order._id, { amountMinor: 2500, reason: 'dup' }, 'dup')
+    const second = await refundRequest(
+      admin,
+      order._id,
+      { amountMinor: 2500, reason: 'dup' },
+      'dup',
+    )
 
     expect(first.status).toBe(201)
     expect(second.status).toBe(200)
@@ -301,11 +314,37 @@ describe('refund settlement', () => {
     const before = await Inventory.findById(item.inventory._id)
     expect(before.quantityOnHand).toBe(10)
 
-    await applyRefundEvent(response.body.data.refund.stripeRefundId, 'succeeded')
+    await applyRefundEvent(response.body.data.refund.providerRefundId, 'succeeded')
 
     const after = await Inventory.findById(item.inventory._id)
     expect(after.quantityOnHand).toBe(11)
     expect(after.quantityAvailable).toBe(11)
+  })
+
+  // Cash on delivery has no processor to wait on: the money is handed back at
+  // the door, so recording the refund *is* the settlement.
+  it('settles a cash refund immediately instead of waiting for a webhook', async () => {
+    const admin = await createUser({ role: 'admin' })
+    const { order, payment } = await buildPaidOrder()
+    await Payment.updateOne(
+      { _id: payment._id },
+      { $set: { provider: 'cash' }, $unset: { providerPaymentIntentId: '' } },
+    )
+
+    const response = await refundRequest(
+      admin,
+      order._id,
+      { amountMinor: 4000, reason: 'damaged on arrival' },
+      'cash-refund-1',
+    )
+
+    expect(response.status).toBe(201)
+    // No provider error, and terminal without any webhook being delivered.
+    expect(response.body.data.providerError).toBeNull()
+    expect(response.body.data.refund.status).toBe('succeeded')
+
+    const settled = await Payment.findById(payment._id)
+    expect(settled.refundedMinor).toBe(4000)
   })
 
   it('is idempotent when the same refund event arrives twice', async () => {
@@ -324,7 +363,7 @@ describe('refund settlement', () => {
       'restock-2',
     )
 
-    const refundId = response.body.data.refund.stripeRefundId
+    const refundId = response.body.data.refund.providerRefundId
     await applyRefundEvent(refundId, 'succeeded')
     await applyRefundEvent(refundId, 'succeeded')
 
@@ -345,7 +384,7 @@ describe('refund settlement', () => {
     )
     expect((await Payment.findOne({ orderId: order._id })).refundedMinor).toBe(4000)
 
-    await applyRefundEvent(response.body.data.refund.stripeRefundId, 'failed')
+    await applyRefundEvent(response.body.data.refund.providerRefundId, 'failed')
 
     const payment = await Payment.findOne({ orderId: order._id })
     expect(payment.refundedMinor).toBe(0)
@@ -426,7 +465,7 @@ describe('refund reporting', () => {
       { amountMinor: 3000, reason: 'goodwill' },
       'analytics-1',
     )
-    await applyRefundEvent(response.body.data.refund.stripeRefundId, 'succeeded')
+    await applyRefundEvent(response.body.data.refund.providerRefundId, 'succeeded')
 
     const after = await request(app)
       .get('/api/v1/sellers/analytics')

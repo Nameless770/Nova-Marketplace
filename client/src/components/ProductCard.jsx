@@ -134,11 +134,24 @@ export function ProductCard({ product }) {
             </button>
           ) : expanded ? (
             <div className="qty-stepper" aria-label="Quantity in cart">
-              <button type="button" onClick={(event) => step(-1, event)} disabled={busy} aria-label="Decrease quantity">
+              <button
+                type="button"
+                onClick={(event) => step(-1, event)}
+                disabled={busy}
+                // At one, minus removes the item — say so, so the disappearance
+                // is not a surprise. Matches the cart page's stepper.
+                aria-label={cartLine.quantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                title={cartLine.quantity === 1 ? 'Remove from cart' : 'Decrease quantity'}
+              >
                 −
               </button>
               <span className="qty-value">{cartLine.quantity}</span>
-              <button type="button" onClick={(event) => step(1, event)} disabled={busy} aria-label="Increase quantity">
+              <button
+                type="button"
+                onClick={(event) => step(1, event)}
+                disabled={busy}
+                aria-label="Increase quantity"
+              >
                 +
               </button>
             </div>

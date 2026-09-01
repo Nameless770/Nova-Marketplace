@@ -68,84 +68,280 @@ const VOCAB = {
   audio: {
     nouns: ['Headphones', 'Earbuds', 'Speaker', 'Turntable', 'Soundbar', 'Microphone', 'Amplifier'],
     adjectives: ['Wireless', 'Studio', 'Portable', 'Reference', 'Compact', 'Open-Back'],
-    features: ['40 hour battery life', 'active noise cancelling', 'Bluetooth 5.3', 'USB-C fast charging', 'balanced armature drivers', 'a detachable braided cable'],
+    features: [
+      '40 hour battery life',
+      'active noise cancelling',
+      'Bluetooth 5.3',
+      'USB-C fast charging',
+      'balanced armature drivers',
+      'a detachable braided cable',
+    ],
     price: [2500, 45000],
   },
   lighting: {
     nouns: ['Desk Lamp', 'Floor Lamp', 'Pendant Light', 'Wall Sconce', 'Reading Light', 'Lantern'],
     adjectives: ['Dimmable', 'Warm', 'Adjustable', 'Brass', 'Linen', 'Folding'],
-    features: ['three brightness levels', 'a weighted base', 'low-glare diffusion', 'a 2700K warm bulb', 'a fabric shade', 'touch control'],
+    features: [
+      'three brightness levels',
+      'a weighted base',
+      'low-glare diffusion',
+      'a 2700K warm bulb',
+      'a fabric shade',
+      'touch control',
+    ],
     price: [1900, 32000],
   },
   workspace: {
-    nouns: ['Keyboard', 'Laptop Stand', 'Monitor Arm', 'Desk Mat', 'Mouse', 'Cable Tray', 'Footrest'],
+    nouns: [
+      'Keyboard',
+      'Laptop Stand',
+      'Monitor Arm',
+      'Desk Mat',
+      'Mouse',
+      'Cable Tray',
+      'Footrest',
+    ],
     adjectives: ['Mechanical', 'Aluminium', 'Ergonomic', 'Low-Profile', 'Adjustable', 'Compact'],
-    features: ['hot-swappable switches', 'PBT keycaps', 'a USB-C connection', 'tool-free assembly', 'a cork surface', 'cable routing'],
+    features: [
+      'hot-swappable switches',
+      'PBT keycaps',
+      'a USB-C connection',
+      'tool-free assembly',
+      'a cork surface',
+      'cable routing',
+    ],
     price: [1200, 38000],
   },
   home: {
     nouns: ['Throw Blanket', 'Cushion Cover', 'Vase', 'Mirror', 'Shelf', 'Rug', 'Storage Basket'],
     adjectives: ['Linen', 'Stoneware', 'Woven', 'Oak', 'Marble', 'Handmade'],
-    features: ['a stonewashed finish', 'a matte glaze', 'natural jute fibres', 'a solid oak frame', 'hand-thrown detailing'],
+    features: [
+      'a stonewashed finish',
+      'a matte glaze',
+      'natural jute fibres',
+      'a solid oak frame',
+      'hand-thrown detailing',
+    ],
     price: [1500, 26000],
   },
   kitchen: {
-    nouns: ['Mug Set', 'Chef Knife', 'Cutting Board', 'French Press', 'Kettle', 'Mixing Bowls', 'Pepper Mill'],
+    nouns: [
+      'Mug Set',
+      'Chef Knife',
+      'Cutting Board',
+      'French Press',
+      'Kettle',
+      'Mixing Bowls',
+      'Pepper Mill',
+    ],
     adjectives: ['Stoneware', 'Carbon Steel', 'Walnut', 'Glass', 'Enamel', 'Cast Iron'],
-    features: ['a dishwasher-safe glaze', 'a full-tang blade', 'end-grain construction', 'a double-wall body', 'an ergonomic handle'],
+    features: [
+      'a dishwasher-safe glaze',
+      'a full-tang blade',
+      'end-grain construction',
+      'a double-wall body',
+      'an ergonomic handle',
+    ],
     price: [1200, 24000],
   },
   outdoor: {
     nouns: ['Camp Chair', 'Water Bottle', 'Picnic Blanket', 'Head Torch', 'Dry Bag', 'Cool Box'],
     adjectives: ['Insulated', 'Packable', 'Waterproof', 'Lightweight', 'Rugged', 'Foldable'],
-    features: ['24 hour cold retention', 'a roll-top closure', 'ripstop fabric', 'a rechargeable battery', 'a compact carry case'],
+    features: [
+      '24 hour cold retention',
+      'a roll-top closure',
+      'ripstop fabric',
+      'a rechargeable battery',
+      'a compact carry case',
+    ],
     price: [1400, 21000],
   },
   fitness: {
     nouns: ['Yoga Mat', 'Kettlebell', 'Resistance Bands', 'Foam Roller', 'Jump Rope', 'Gym Towel'],
     adjectives: ['Non-Slip', 'Cast Iron', 'Textured', 'Weighted', 'Cork', 'Adjustable'],
-    features: ['a closed-cell surface', 'a natural cork top', 'a powder-coated finish', 'a carrying strap', 'graduated resistance'],
+    features: [
+      'a closed-cell surface',
+      'a natural cork top',
+      'a powder-coated finish',
+      'a carrying strap',
+      'graduated resistance',
+    ],
     price: [900, 18000],
   },
   stationery: {
     nouns: ['Notebook', 'Fountain Pen', 'Pencil Set', 'Planner', 'Sketchbook', 'Desk Diary'],
     adjectives: ['Dot Grid', 'Hardbound', 'Refillable', 'Pocket', 'Layflat', 'Recycled'],
-    features: ['a sewn binding that lies flat', '120gsm paper', 'a fine nib', 'an elastic closure', 'a ribbon marker'],
+    features: [
+      'a sewn binding that lies flat',
+      '120gsm paper',
+      'a fine nib',
+      'an elastic closure',
+      'a ribbon marker',
+    ],
     price: [600, 9500],
   },
   bags: {
     nouns: ['Backpack', 'Tote', 'Messenger Bag', 'Weekender', 'Sling Pack', 'Laptop Sleeve'],
-    adjectives: ['Waxed Canvas', 'Roll-Top', 'Padded', 'Minimal', 'Water-Resistant', 'Leather-Trimmed'],
-    features: ['a padded 16 inch laptop compartment', 'YKK zips', 'a waxed cotton shell', 'hidden side pockets', 'an adjustable strap'],
+    adjectives: [
+      'Waxed Canvas',
+      'Roll-Top',
+      'Padded',
+      'Minimal',
+      'Water-Resistant',
+      'Leather-Trimmed',
+    ],
+    features: [
+      'a padded 16 inch laptop compartment',
+      'YKK zips',
+      'a waxed cotton shell',
+      'hidden side pockets',
+      'an adjustable strap',
+    ],
     price: [3200, 42000],
   },
   accessories: {
     nouns: ['Wallet', 'Card Holder', 'Watch Strap', 'Key Organiser', 'Sunglasses', 'Belt'],
     adjectives: ['Leather', 'Slim', 'Woven', 'Titanium', 'Vegetable-Tanned', 'Minimal'],
-    features: ['RFID blocking', 'quick-release pins', 'full-grain leather', 'a hand-stitched edge', 'polarised lenses'],
+    features: [
+      'RFID blocking',
+      'quick-release pins',
+      'full-grain leather',
+      'a hand-stitched edge',
+      'polarised lenses',
+    ],
     price: [1800, 28000],
   },
 }
 
 const STORES = [
-  { storeName: 'Nova Supply Co', slug: 'nova-supply-co', brand: 'Nova', email: 'seller@example.com', first: 'Nadia' },
-  { storeName: 'Atelier Ito', slug: 'atelier-ito', brand: 'Atelier', email: 'atelier@example.com', first: 'Kenji' },
-  { storeName: 'Harbour Goods', slug: 'harbour-goods', brand: 'Harbour', email: 'harbour@example.com', first: 'Maeve' },
-  { storeName: 'Fieldnote', slug: 'fieldnote', brand: 'Fieldnote', email: 'fieldnote@example.com', first: 'Tomas' },
-  { storeName: 'Copper & Cane', slug: 'copper-and-cane', brand: 'Copper', email: 'copper@example.com', first: 'Ines' },
-  { storeName: 'Northbound', slug: 'northbound', brand: 'Northbound', email: 'north@example.com', first: 'Alva' },
-  { storeName: 'Studio Marlow', slug: 'studio-marlow', brand: 'Marlow', email: 'marlow@example.com', first: 'Ruth' },
-  { storeName: 'Kite & Loom', slug: 'kite-and-loom', brand: 'Kite', email: 'kite@example.com', first: 'Omar' },
+  {
+    storeName: 'Nova Supply Co',
+    slug: 'nova-supply-co',
+    brand: 'Nova',
+    email: 'seller@example.com',
+    first: 'Nadia',
+  },
+  {
+    storeName: 'Atelier Ito',
+    slug: 'atelier-ito',
+    brand: 'Atelier',
+    email: 'atelier@example.com',
+    first: 'Kenji',
+  },
+  {
+    storeName: 'Harbour Goods',
+    slug: 'harbour-goods',
+    brand: 'Harbour',
+    email: 'harbour@example.com',
+    first: 'Maeve',
+  },
+  {
+    storeName: 'Fieldnote',
+    slug: 'fieldnote',
+    brand: 'Fieldnote',
+    email: 'fieldnote@example.com',
+    first: 'Tomas',
+  },
+  {
+    storeName: 'Copper & Cane',
+    slug: 'copper-and-cane',
+    brand: 'Copper',
+    email: 'copper@example.com',
+    first: 'Ines',
+  },
+  {
+    storeName: 'Northbound',
+    slug: 'northbound',
+    brand: 'Northbound',
+    email: 'north@example.com',
+    first: 'Alva',
+  },
+  {
+    storeName: 'Studio Marlow',
+    slug: 'studio-marlow',
+    brand: 'Marlow',
+    email: 'marlow@example.com',
+    first: 'Ruth',
+  },
+  {
+    storeName: 'Kite & Loom',
+    slug: 'kite-and-loom',
+    brand: 'Kite',
+    email: 'kite@example.com',
+    first: 'Omar',
+  },
 ]
 
-const FIRST_NAMES = ['Ana', 'Ben', 'Cleo', 'Dev', 'Eli', 'Farah', 'Gus', 'Hana', 'Iris', 'Jonas', 'Kira', 'Leo', 'Mira', 'Noor', 'Otto', 'Pia', 'Quinn', 'Rosa', 'Sam', 'Tara', 'Uma', 'Viktor', 'Wren', 'Yusuf', 'Zara']
-const LAST_NAMES = ['Adeyemi', 'Brandt', 'Castillo', 'Dupont', 'Eriksen', 'Ferrari', 'Gallagher', 'Haddad', 'Ivanov', 'Jensen', 'Kowalski', 'Lindqvist', 'Moreau', 'Nakamura', 'Okafor', 'Petrov', 'Rossi', 'Silva', 'Tanaka', 'Vargas']
+const FIRST_NAMES = [
+  'Ana',
+  'Ben',
+  'Cleo',
+  'Dev',
+  'Eli',
+  'Farah',
+  'Gus',
+  'Hana',
+  'Iris',
+  'Jonas',
+  'Kira',
+  'Leo',
+  'Mira',
+  'Noor',
+  'Otto',
+  'Pia',
+  'Quinn',
+  'Rosa',
+  'Sam',
+  'Tara',
+  'Uma',
+  'Viktor',
+  'Wren',
+  'Yusuf',
+  'Zara',
+]
+const LAST_NAMES = [
+  'Adeyemi',
+  'Brandt',
+  'Castillo',
+  'Dupont',
+  'Eriksen',
+  'Ferrari',
+  'Gallagher',
+  'Haddad',
+  'Ivanov',
+  'Jensen',
+  'Kowalski',
+  'Lindqvist',
+  'Moreau',
+  'Nakamura',
+  'Okafor',
+  'Petrov',
+  'Rossi',
+  'Silva',
+  'Tanaka',
+  'Vargas',
+]
 
 const REVIEW_TEXT = {
-  5: ['Exactly what I hoped for. The build quality is a clear step above what I replaced.', 'Genuinely excellent — I have already ordered a second one.', 'Arrived quickly and looks better in person than in the photos.'],
-  4: ['Very good overall. Minor niggle with the packaging but the product itself is solid.', 'Does the job well. Would have liked one more colour option.', 'Happy with it after a few weeks of daily use.'],
-  3: ['Fine for the price. Nothing remarkable either way.', 'Works, but the finish is not quite what I expected.', 'Decent, though it took longer to arrive than stated.'],
-  2: ['Disappointing. The material feels cheaper than the description suggests.', 'Started showing wear within a fortnight.'],
+  5: [
+    'Exactly what I hoped for. The build quality is a clear step above what I replaced.',
+    'Genuinely excellent — I have already ordered a second one.',
+    'Arrived quickly and looks better in person than in the photos.',
+  ],
+  4: [
+    'Very good overall. Minor niggle with the packaging but the product itself is solid.',
+    'Does the job well. Would have liked one more colour option.',
+    'Happy with it after a few weeks of daily use.',
+  ],
+  3: [
+    'Fine for the price. Nothing remarkable either way.',
+    'Works, but the finish is not quite what I expected.',
+    'Decent, though it took longer to arrive than stated.',
+  ],
+  2: [
+    'Disappointing. The material feels cheaper than the description suggests.',
+    'Started showing wear within a fortnight.',
+  ],
   1: ['Did not last a month. Would not buy again.', 'Arrived damaged and the fit was wrong.'],
 }
 
@@ -170,7 +366,19 @@ async function run() {
 
   if (FRESH) {
     console.log('--fresh: clearing generated collections')
-    for (const n of ['products', 'productvariants', 'inventories', 'orders', 'sellerorders', 'orderitems', 'reviews', 'categories', 'sellers', 'coupons', 'recentlyvieweds']) {
+    for (const n of [
+      'products',
+      'productvariants',
+      'inventories',
+      'orders',
+      'sellerorders',
+      'orderitems',
+      'reviews',
+      'categories',
+      'sellers',
+      'coupons',
+      'recentlyvieweds',
+    ]) {
       await col(n).deleteMany({})
     }
     await col('users').deleteMany({ email: { $regex: '@example\\.com$' } })
@@ -181,9 +389,14 @@ async function run() {
 
   // ---- categories -------------------------------------------------------
   const categories = CATEGORIES.map((c, i) => ({
-    _id: oid(), name: c.name, slug: c.slug, parentId: null,
+    _id: oid(),
+    name: c.name,
+    slug: c.slug,
+    parentId: null,
     description: `${c.name} goods from independent makers.`,
-    status: 'active', sortOrder: i, ...stamp,
+    status: 'active',
+    sortOrder: i,
+    ...stamp,
   }))
   await col('categories').bulkWrite(
     // _id must be removed from $set entirely — setting it to undefined makes
@@ -202,7 +415,14 @@ async function run() {
     await col('users').updateOne(
       { email: store.email },
       {
-        $set: { firstName: store.first, lastName: 'Seller', role: 'seller', status: 'active', sellerApprovalStatus: 'approved', updatedAt: new Date() },
+        $set: {
+          firstName: store.first,
+          lastName: 'Seller',
+          role: 'seller',
+          status: 'active',
+          sellerApprovalStatus: 'approved',
+          updatedAt: new Date(),
+        },
         $setOnInsert: { passwordHash, addresses: [], createdAt: new Date() },
       },
       { upsert: true },
@@ -212,10 +432,14 @@ async function run() {
       { slug: store.slug },
       {
         $set: {
-          ownerUserId: owner._id, storeName: store.storeName, status: 'approved',
+          ownerUserId: owner._id,
+          storeName: store.storeName,
+          status: 'approved',
           approvedAt: daysAgo(between(120, 400)),
           description: `${store.storeName} makes considered goods in small runs.`,
-          ratingAverage: mongoose.Types.Decimal128.fromString('0'), ratingCount: 0, updatedAt: new Date(),
+          ratingAverage: mongoose.Types.Decimal128.fromString('0'),
+          ratingCount: 0,
+          updatedAt: new Date(),
         },
         $setOnInsert: { createdAt: daysAgo(between(120, 400)) },
       },
@@ -240,8 +464,20 @@ async function run() {
       updateOne: {
         filter: { email },
         update: {
-          $set: { firstName: first, lastName: last, role: 'customer', status: chance(0.04) ? 'suspended' : 'active', updatedAt: new Date() },
-          $setOnInsert: { _id, passwordHash, addresses: [], sellerApprovalStatus: 'not_applicable', createdAt: daysAgo(between(1, 300)) },
+          $set: {
+            firstName: first,
+            lastName: last,
+            role: 'customer',
+            status: chance(0.04) ? 'suspended' : 'active',
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            _id,
+            passwordHash,
+            addresses: [],
+            sellerApprovalStatus: 'not_applicable',
+            createdAt: daysAgo(between(1, 300)),
+          },
         },
         upsert: true,
       },
@@ -252,8 +488,19 @@ async function run() {
       updateOne: {
         filter: { email },
         update: {
-          $set: { firstName: email.startsWith('admin') ? 'Ada' : 'Bo', lastName: email.startsWith('admin') ? 'Admin' : 'Buyer', role: email.startsWith('admin') ? 'admin' : 'customer', status: 'active', updatedAt: new Date() },
-          $setOnInsert: { passwordHash, addresses: [], sellerApprovalStatus: 'not_applicable', createdAt: daysAgo(300) },
+          $set: {
+            firstName: email.startsWith('admin') ? 'Ada' : 'Bo',
+            lastName: email.startsWith('admin') ? 'Admin' : 'Buyer',
+            role: email.startsWith('admin') ? 'admin' : 'customer',
+            status: 'active',
+            updatedAt: new Date(),
+          },
+          $setOnInsert: {
+            passwordHash,
+            addresses: [],
+            sellerApprovalStatus: 'not_applicable',
+            createdAt: daysAgo(300),
+          },
         },
         upsert: true,
       },
@@ -276,7 +523,10 @@ async function run() {
     const noun = pick(vocab.nouns)
     const adjective = pick(vocab.adjectives)
     const title = `${seller.brand} ${adjective} ${noun}`
-    let slug = `${title}`.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    let slug = `${title}`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
     if (usedSlugs.has(`${seller._id}:${slug}`)) slug = `${slug}-${i}`
     usedSlugs.add(`${seller._id}:${slug}`)
 
@@ -299,11 +549,17 @@ async function run() {
       prices.push(currentPriceMinor)
 
       variants.push({
-        _id: variantId, productId, sellerId: seller._id,
+        _id: variantId,
+        productId,
+        sellerId: seller._id,
         sku: `${slug.slice(0, 28).toUpperCase()}-${v + 1}-${i}`,
         name: variantNames[v] ?? `Option ${v + 1}`,
-        priceMinor, discountPercent, currentPriceMinor, status: 'active',
-        createdAt: created, updatedAt: created,
+        priceMinor,
+        discountPercent,
+        currentPriceMinor,
+        status: 'active',
+        createdAt: created,
+        updatedAt: created,
       })
 
       // A deliberate spread: mostly healthy stock, some low, some sold out, so
@@ -311,36 +567,63 @@ async function run() {
       const roll = rand()
       const quantityOnHand = roll < 0.08 ? 0 : roll < 0.2 ? between(1, 5) : between(10, 200)
       inventories.push({
-        _id: oid(), sellerId: seller._id, productId, variantId,
+        _id: oid(),
+        sellerId: seller._id,
+        productId,
+        variantId,
         sku: variants.at(-1).sku,
-        quantityOnHand, quantityReserved: 0, quantityAvailable: quantityOnHand,
-        lowStockThreshold: 5, isLowStock: quantityOnHand <= 5,
+        quantityOnHand,
+        quantityReserved: 0,
+        quantityAvailable: quantityOnHand,
+        lowStockThreshold: 5,
+        isLowStock: quantityOnHand <= 5,
         status: quantityOnHand > 0 ? 'active' : 'out_of_stock',
-        version: 0, createdAt: created, updatedAt: created,
+        version: 0,
+        createdAt: created,
+        updatedAt: created,
       })
     }
 
     const minPrice = Math.min(...prices)
     products.push({
-      _id: productId, sellerId: seller._id, categoryIds: [catBySlug.get(category.slug)._id],
-      title, slug,
+      _id: productId,
+      sellerId: seller._id,
+      categoryIds: [catBySlug.get(category.slug)._id],
+      title,
+      slug,
       description: `${title} with ${pick(vocab.features)} and ${pick(vocab.features)}. Made in small batches by ${seller.storeName}.`,
       brand: seller.brand,
       images: [{ url: imageForCategory(category.slug, slug), alt: title }],
-      hasVariants: true, status,
-      priceMinor: minPrice, currentPriceMinor: minPrice,
-      minPriceMinor: minPrice, maxPriceMinor: Math.max(...prices),
-      currency: 'USD', discountPercent: 0, attributes: {},
-      ratingAverage: mongoose.Types.Decimal128.fromString('0'), ratingCount: 0,
-      createdAt: created, updatedAt: created, __v: 0,
+      hasVariants: true,
+      status,
+      priceMinor: minPrice,
+      currentPriceMinor: minPrice,
+      minPriceMinor: minPrice,
+      maxPriceMinor: Math.max(...prices),
+      currency: 'USD',
+      discountPercent: 0,
+      attributes: {},
+      ratingAverage: mongoose.Types.Decimal128.fromString('0'),
+      ratingCount: 0,
+      createdAt: created,
+      updatedAt: created,
+      __v: 0,
     })
   }
 
-  const chunk = (arr, size) => Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, i * size + size))
-  for (const batch of chunk(products, 200)) await col('products').insertMany(batch, { ordered: false })
-  for (const batch of chunk(variants, 200)) await col('productvariants').insertMany(batch, { ordered: false })
-  for (const batch of chunk(inventories, 200)) await col('inventories').insertMany(batch, { ordered: false })
-  console.log(`products: ${products.length}  variants: ${variants.length}  inventory rows: ${inventories.length}`)
+  const chunk = (arr, size) =>
+    Array.from({ length: Math.ceil(arr.length / size) }, (_, i) =>
+      arr.slice(i * size, i * size + size),
+    )
+  for (const batch of chunk(products, 200))
+    await col('products').insertMany(batch, { ordered: false })
+  for (const batch of chunk(variants, 200))
+    await col('productvariants').insertMany(batch, { ordered: false })
+  for (const batch of chunk(inventories, 200))
+    await col('inventories').insertMany(batch, { ordered: false })
+  console.log(
+    `products: ${products.length}  variants: ${variants.length}  inventory rows: ${inventories.length}`,
+  )
 
   // ---- orders -----------------------------------------------------------
   const sellableVariants = variants.filter((v) => {
@@ -359,7 +642,8 @@ async function run() {
     const placed = daysAgo(between(0, DAYS))
     const lineCount = chance(0.3) ? between(2, 4) : 1
     const chosen = []
-    for (let l = 0; l < lineCount; l += 1) chosen.push(sellableVariants[between(0, sellableVariants.length - 1)])
+    for (let l = 0; l < lineCount; l += 1)
+      chosen.push(sellableVariants[between(0, sellableVariants.length - 1)])
 
     const orderId = oid()
     const bySeller = new Map()
@@ -378,56 +662,106 @@ async function run() {
 
     // Most orders are paid; the rest give the dashboards realistic other states.
     const roll = rand()
-    const paymentStatus = roll < 0.82 ? 'paid' : roll < 0.9 ? 'pending' : roll < 0.96 ? 'failed' : 'refunded'
-    const status = paymentStatus === 'paid' ? pick(['confirmed', 'processing', 'shipped', 'delivered', 'delivered']) : paymentStatus === 'refunded' ? 'refunded' : paymentStatus === 'failed' ? 'cancelled' : 'pending'
+    const paymentStatus =
+      roll < 0.82 ? 'paid' : roll < 0.9 ? 'pending' : roll < 0.96 ? 'failed' : 'refunded'
+    const status =
+      paymentStatus === 'paid'
+        ? pick(['confirmed', 'processing', 'shipped', 'delivered', 'delivered'])
+        : paymentStatus === 'refunded'
+          ? 'refunded'
+          : paymentStatus === 'failed'
+            ? 'cancelled'
+            : 'pending'
 
     orders.push({
       _id: orderId,
       orderNumber: `ORD-${(100000 + i).toString(36).toUpperCase()}-${i}`,
       customerId: customer._id,
       sellerIds: [...bySeller.values()].map((g) => g.sellerId),
-      status, paymentStatus,
+      status,
+      paymentStatus,
       currency: 'USD',
-      subtotalMinor: subtotal, shippingMinor: 0, discountMinor: 0, taxMinor: 0, totalMinor: subtotal,
+      subtotalMinor: subtotal,
+      shippingMinor: 0,
+      discountMinor: 0,
+      taxMinor: 0,
+      totalMinor: subtotal,
       refundedMinor: paymentStatus === 'refunded' ? subtotal : 0,
       couponSnapshots: [],
-      shippingAddressSnapshot: ADDRESS, billingAddressSnapshot: ADDRESS,
+      shippingAddressSnapshot: ADDRESS,
+      billingAddressSnapshot: ADDRESS,
       placedAt: paymentStatus === 'paid' ? placed : undefined,
-      createdAt: placed, updatedAt: placed, __v: 0,
+      createdAt: placed,
+      updatedAt: placed,
+      __v: 0,
     })
 
     for (const group of bySeller.values()) {
       const sellerOrderId = oid()
       sellerOrders.push({
-        _id: sellerOrderId, orderId, sellerId: group.sellerId,
+        _id: sellerOrderId,
+        orderId,
+        sellerId: group.sellerId,
         sellerOrderNumber: `ORD-${(100000 + i).toString(36).toUpperCase()}-${i}-${group.sellerId.toString().slice(-4)}`,
         status: status === 'pending' ? 'pending' : status,
-        subtotalMinor: group.total, shippingMinor: 0, discountMinor: 0, taxMinor: 0, totalMinor: group.total,
-        itemCount: group.lines.length, createdAt: placed, updatedAt: placed, __v: 0,
+        subtotalMinor: group.total,
+        shippingMinor: 0,
+        discountMinor: 0,
+        taxMinor: 0,
+        totalMinor: group.total,
+        itemCount: group.lines.length,
+        createdAt: placed,
+        updatedAt: placed,
+        __v: 0,
       })
       for (const l of group.lines) {
         const orderItemId = oid()
         orderItems.push({
-          _id: orderItemId, orderId, sellerOrderId, sellerId: group.sellerId,
-          productId: l.product._id, variantId: l.variant._id,
-          productSnapshot: { title: l.product.title, brand: l.product.brand, imageUrl: l.product.images[0].url },
+          _id: orderItemId,
+          orderId,
+          sellerOrderId,
+          sellerId: group.sellerId,
+          productId: l.product._id,
+          variantId: l.variant._id,
+          productSnapshot: {
+            title: l.product.title,
+            brand: l.product.brand,
+            imageUrl: l.product.images[0].url,
+          },
           variantSnapshot: { name: l.variant.name, sku: l.variant.sku },
-          unitPriceMinor: l.variant.currentPriceMinor, quantity: l.quantity,
-          discountMinor: 0, taxMinor: 0, shippingMinor: 0, lineTotalMinor: l.line,
+          unitPriceMinor: l.variant.currentPriceMinor,
+          quantity: l.quantity,
+          discountMinor: 0,
+          taxMinor: 0,
+          shippingMinor: 0,
+          lineTotalMinor: l.line,
           fulfillmentStatus: status === 'pending' ? 'pending' : status,
-          createdAt: placed, updatedAt: placed, __v: 0,
+          createdAt: placed,
+          updatedAt: placed,
+          __v: 0,
         })
         if (paymentStatus === 'paid') {
-          purchases.push({ customerId: customer._id, productId: l.product._id, sellerId: group.sellerId, orderId, orderItemId, placed })
+          purchases.push({
+            customerId: customer._id,
+            productId: l.product._id,
+            sellerId: group.sellerId,
+            orderId,
+            orderItemId,
+            placed,
+          })
         }
       }
     }
   }
 
   for (const batch of chunk(orders, 200)) await col('orders').insertMany(batch, { ordered: false })
-  for (const batch of chunk(sellerOrders, 200)) await col('sellerorders').insertMany(batch, { ordered: false })
-  for (const batch of chunk(orderItems, 200)) await col('orderitems').insertMany(batch, { ordered: false })
-  console.log(`orders: ${orders.length}  seller orders: ${sellerOrders.length}  order items: ${orderItems.length}`)
+  for (const batch of chunk(sellerOrders, 200))
+    await col('sellerorders').insertMany(batch, { ordered: false })
+  for (const batch of chunk(orderItems, 200))
+    await col('orderitems').insertMany(batch, { ordered: false })
+  console.log(
+    `orders: ${orders.length}  seller orders: ${sellerOrders.length}  order items: ${orderItems.length}`,
+  )
 
   // ---- reviews (only from real purchases, one per customer per product) ---
   const reviews = []
@@ -447,12 +781,21 @@ async function run() {
     const status = chance(0.92) ? 'published' : 'pending'
 
     reviews.push({
-      _id: oid(), productId: purchase.productId, sellerId: purchase.sellerId,
-      customerId: purchase.customerId, orderId: purchase.orderId, orderItemId: purchase.orderItemId,
-      rating, title: '', text: pick(REVIEW_TEXT[rating]), images: [],
-      verifiedPurchase: true, status,
+      _id: oid(),
+      productId: purchase.productId,
+      sellerId: purchase.sellerId,
+      customerId: purchase.customerId,
+      orderId: purchase.orderId,
+      orderItemId: purchase.orderItemId,
+      rating,
+      title: '',
+      text: pick(REVIEW_TEXT[rating]),
+      images: [],
+      verifiedPurchase: true,
+      status,
       createdAt: new Date(purchase.placed.getTime() + between(1, 14) * 86400000),
-      updatedAt: new Date(), __v: 0,
+      updatedAt: new Date(),
+      __v: 0,
     })
 
     if (status === 'published') {
@@ -463,7 +806,8 @@ async function run() {
       ratingTally.set(k, t)
     }
   }
-  for (const batch of chunk(reviews, 200)) await col('reviews').insertMany(batch, { ordered: false })
+  for (const batch of chunk(reviews, 200))
+    await col('reviews').insertMany(batch, { ordered: false })
   console.log(`reviews: ${reviews.length}`)
 
   // Ratings must agree with the reviews that exist, or the data is incoherent.
@@ -478,14 +822,21 @@ async function run() {
       },
     },
   }))
-  if (ratingOps.length) for (const batch of chunk(ratingOps, 300)) await col('products').bulkWrite(batch)
+  if (ratingOps.length)
+    for (const batch of chunk(ratingOps, 300)) await col('products').bulkWrite(batch)
   console.log(`product ratings recomputed: ${ratingOps.length}`)
 
   // ---- coupons ----------------------------------------------------------
   const admin = await col('users').findOne({ email: 'admin@example.com' })
   const coupons = [
     { code: 'WELCOME10', discountType: 'fixed', discountValue: 1000, status: 'active' },
-    { code: 'SAVE20', discountType: 'percentage', discountValue: 20, maximumDiscountMinor: 5000, status: 'active' },
+    {
+      code: 'SAVE20',
+      discountType: 'percentage',
+      discountValue: 20,
+      maximumDiscountMinor: 5000,
+      status: 'active',
+    },
     { code: 'FREESHIP', discountType: 'fixed', discountValue: 500, status: 'active' },
     { code: 'LASTYEAR', discountType: 'fixed', discountValue: 1500, status: 'inactive' },
   ]
@@ -495,11 +846,17 @@ async function run() {
         filter: { code: c.code },
         update: {
           $set: {
-            ownerType: 'platform', currency: 'USD',
-            startsAt: daysAgo(30), expiresAt: daysAgo(-365),
-            perUserUsageLimit: 1, usageCount: between(0, 40), status: c.status,
-            discountType: c.discountType, discountValue: c.discountValue,
-            maximumDiscountMinor: c.maximumDiscountMinor, createdBy: admin._id,
+            ownerType: 'platform',
+            currency: 'USD',
+            startsAt: daysAgo(30),
+            expiresAt: daysAgo(-365),
+            perUserUsageLimit: 1,
+            usageCount: between(0, 40),
+            status: c.status,
+            discountType: c.discountType,
+            discountValue: c.discountValue,
+            maximumDiscountMinor: c.maximumDiscountMinor,
+            createdBy: admin._id,
             updatedAt: new Date(),
           },
           $setOnInsert: { createdAt: daysAgo(30) },
@@ -514,7 +871,9 @@ async function run() {
   const paid = orders.filter((o) => o.paymentStatus === 'paid')
   const revenue = paid.reduce((t, o) => t + o.totalMinor, 0)
   console.log('\n--- summary ---')
-  console.log(`documents written: ${products.length + variants.length + inventories.length + orders.length + sellerOrders.length + orderItems.length + reviews.length}`)
+  console.log(
+    `documents written: ${products.length + variants.length + inventories.length + orders.length + sellerOrders.length + orderItems.length + reviews.length}`,
+  )
   console.log(`paid orders: ${paid.length}  gross revenue: $${(revenue / 100).toFixed(2)}`)
   console.log(`\nAll accounts use password: ${process.env.SEED_PASSWORD || 'Password123!'}`)
   console.log('  admin@example.com    admin')

@@ -32,7 +32,11 @@ export function SellerOverviewPage() {
           value={formatMoney(data?.revenueMinor ?? 0, 'USD')}
           hint={`${data?.paidOrders ?? 0} paid orders`}
         />
-        <StatCard label="Orders" value={orders.total ?? 0} hint={`${orders.pending ?? 0} to fulfil`} />
+        <StatCard
+          label="Orders"
+          value={orders.total ?? 0}
+          hint={`${orders.pending ?? 0} to fulfil`}
+        />
         <StatCard
           label="Products"
           value={products.total ?? 0}

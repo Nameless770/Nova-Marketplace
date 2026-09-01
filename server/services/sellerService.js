@@ -251,8 +251,7 @@ export async function getSellerDashboard(userId) {
       Notification.countDocuments({ recipientUserId: userId, status: 'unread' }),
     ])
 
-  const byStatus = (rows) =>
-    rows.reduce((totals, row) => ({ ...totals, [row._id]: row.count }), {})
+  const byStatus = (rows) => rows.reduce((totals, row) => ({ ...totals, [row._id]: row.count }), {})
   const products = byStatus(productCounts)
   const orders = byStatus(orderCounts)
   const sum = (counts) => Object.values(counts).reduce((total, count) => total + count, 0)

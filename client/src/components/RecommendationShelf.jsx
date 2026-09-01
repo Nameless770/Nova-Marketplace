@@ -35,7 +35,12 @@ export function RecommendationShelf({ title, fetcher, emptyLabel, showReasons = 
         {items.map((item) => (
           <li key={item.productId} className="shelf-card">
             <Link to={`/products/${item.productId}`} className="shelf-image">
-              <ProductImage url={item.imageUrl} alt={item.title} label={item.title} loading="lazy" />
+              <ProductImage
+                url={item.imageUrl}
+                alt={item.title}
+                label={item.title}
+                loading="lazy"
+              />
             </Link>
             <div className="shelf-body">
               <Link to={`/products/${item.productId}`} className="shelf-title">

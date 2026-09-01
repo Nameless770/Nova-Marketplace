@@ -142,14 +142,24 @@ button {
   white-space: nowrap;
 }
 .brand::before {
-  content: "";
+  content: '';
   width: 14px;
   height: 14px;
   flex: none;
   background: var(--ink);
   clip-path: polygon(
-    50% 0%, 58% 38%, 93% 22%, 66% 50%, 93% 78%, 58% 62%,
-    50% 100%, 42% 62%, 7% 78%, 34% 50%, 7% 22%, 42% 38%
+    50% 0%,
+    58% 38%,
+    93% 22%,
+    66% 50%,
+    93% 78%,
+    58% 62%,
+    50% 100%,
+    42% 62%,
+    7% 78%,
+    34% 50%,
+    7% 22%,
+    42% 38%
   );
 }
 .navbar nav {
@@ -1498,7 +1508,10 @@ h2 {
   color: var(--ink);
   font: inherit;
 }
-.dialog-form { display: grid; gap: 1rem; }
+.dialog-form {
+  display: grid;
+  gap: 1rem;
+}
 .dialog-form input[type='number'],
 .dialog-form textarea {
   width: 100%;
@@ -1943,7 +1956,6 @@ h2 {
     grid-column: span 1;
   }
 }
-
 
 /* ---------------------------------------------------------------------------
    Design system: shared control + surface treatment.

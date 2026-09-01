@@ -15,8 +15,7 @@ const MIN_SECRET_LENGTH = 32
  * without weakening the check where it counts.
  */
 function secretWeakness(secret) {
-  if (secret.length < MIN_SECRET_LENGTH)
-    return `shorter than ${MIN_SECRET_LENGTH} characters`
+  if (secret.length < MIN_SECRET_LENGTH) return `shorter than ${MIN_SECRET_LENGTH} characters`
   if (new Set(secret).size < 12) return 'too few distinct characters to be random'
   if (/^(change|replace|secret|password|local|dev|test|example)/i.test(secret))
     return 'looks like a placeholder'

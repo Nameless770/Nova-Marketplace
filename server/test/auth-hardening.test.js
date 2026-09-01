@@ -90,12 +90,14 @@ describe('credential brute-force protection', () => {
   it('throttles repeated registration attempts', async () => {
     const statuses = []
     for (let index = 0; index < 13; index += 1) {
-      const response = await request(app).post('/api/v1/auth/register').send({
-        email: `flood${index}@example.com`,
-        password: 'Password123!',
-        firstName: 'Flood',
-        lastName: 'Test',
-      })
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .send({
+          email: `flood${index}@example.com`,
+          password: 'Password123!',
+          firstName: 'Flood',
+          lastName: 'Test',
+        })
       statuses.push(response.status)
     }
 
@@ -107,11 +109,7 @@ describe('JWT hardening', () => {
   it('rejects a token signed with a different algorithm family', async () => {
     const user = await createUser({ role: 'customer' })
     // "alg: none" is the classic algorithm-confusion attack.
-    const forged = jwt.sign(
-      { sub: user._id.toString(), role: 'admin' },
-      '',
-      { algorithm: 'none' },
-    )
+    const forged = jwt.sign({ sub: user._id.toString(), role: 'admin' }, '', { algorithm: 'none' })
 
     const response = await request(app)
       .get('/api/v1/users/me')

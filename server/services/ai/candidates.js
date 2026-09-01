@@ -104,7 +104,9 @@ export async function fetchCandidates(searchQuery) {
       description: (product.description ?? '').slice(0, DESCRIPTION_BUDGET),
       // Pre-formatted for the prompt so the model never has to do arithmetic.
       priceLabel: formatMinor(priceMinor, currency),
-      ratingLabel: ratingCount ? `${ratingAverage.toFixed(1)} from ${ratingCount} reviews` : 'no reviews yet',
+      ratingLabel: ratingCount
+        ? `${ratingAverage.toFixed(1)} from ${ratingCount} reviews`
+        : 'no reviews yet',
     }
     candidatesById.set(id, record)
     return record

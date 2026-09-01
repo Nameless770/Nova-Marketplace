@@ -57,9 +57,7 @@ export function SellerRevenuePage() {
               value={formatMoney(metrics.discountMinor ?? 0, 'USD')}
             />
           </div>
-          <p className="seller-subtle">
-            Revenue counts only orders confirmed as paid by Stripe.
-          </p>
+          <p className="seller-subtle">Revenue counts only orders confirmed as paid by Stripe.</p>
 
           <h3>Best-selling products</h3>
           {bestSellers.length === 0 ? (

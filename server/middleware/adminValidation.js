@@ -24,7 +24,12 @@ export function validateCategoryUpdate(request, _response, next) {
     errors.push('status must be active, inactive or removed')
   if (sortOrder !== undefined && (!Number.isSafeInteger(sortOrder) || sortOrder < 0))
     errors.push('sortOrder must be a non-negative integer')
-  if (name === undefined && description === undefined && status === undefined && sortOrder === undefined)
+  if (
+    name === undefined &&
+    description === undefined &&
+    status === undefined &&
+    sortOrder === undefined
+  )
     errors.push('at least one field is required')
 
   if (errors.length) return next(new AppError(400, 'VALIDATION_ERROR', errors.join('; ')))

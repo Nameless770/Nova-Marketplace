@@ -86,9 +86,7 @@ async function alreadyRefundedForScope(orderId, sellerOrderId, session) {
  */
 async function allocateRefund(order, sellerOrder, amountMinor, session) {
   if (sellerOrder) {
-    return [
-      { sellerId: sellerOrder.sellerId, sellerOrderId: sellerOrder._id, amountMinor },
-    ]
+    return [{ sellerId: sellerOrder.sellerId, sellerOrderId: sellerOrder._id, amountMinor }]
   }
 
   const sellerOrders = await SellerOrder.find({ orderId: order._id }).session(session).lean()
@@ -283,6 +281,8 @@ export async function createRefund(user, orderId, input, idempotencyKey) {
             reason: input.reason.trim(),
             restock: Boolean(input.restock),
             items: refundItems,
+            // A refund follows the payment it reverses.
+            provider: payment.provider ?? 'cash',
             idempotencyKey: key,
           },
         ],
@@ -323,44 +323,148 @@ export async function createRefund(user, orderId, input, idempotencyKey) {
 }
 
 /**
- * Submits a recorded refund to Stripe. Separate from createRefund so the
- * database transaction never spans a network call.
+ * Moves a recorded refund toward settlement, by whichever route its payment
+ * used. Separate from createRefund so the database transaction never spans a
+ * network call.
+ *
+ * A **cash** refund has no processor: the money is handed back at the door, so
+ * the record is the settlement and it completes immediately. A **stripe** refund
+ * is submitted to the processor and settles later on its webhook.
  */
 export async function submitRefundToProvider(refundId) {
   const refund = await Refund.findById(refundId)
   if (!refund) throw new AppError(404, 'REFUND_NOT_FOUND', 'Refund not found')
   if (refund.status !== 'pending') return refund.toObject()
-  if (refund.stripeRefundId) return refund.toObject()
+  if (refund.providerRefundId) return refund.toObject()
 
   const payment = await Payment.findById(refund.paymentId).lean()
-  if (!payment?.stripePaymentIntentId)
-    throw new AppError(409, 'PAYMENT_INTENT_MISSING', 'Payment has no Stripe payment intent')
+  const provider = refund.provider ?? payment?.provider ?? 'cash'
+
+  if (provider === 'cash') {
+    // Stamp the reference first so settlement can find the refund by the same
+    // unique key a provider id would occupy — that index is what keeps a repeat
+    // call idempotent.
+    refund.providerRefundId = cashRefundReference(refund)
+    await refund.save()
+    // Settled through the same idempotent path a webhook would use, so restock
+    // and bookkeeping behave identically however the money moved.
+    await applyRefundEvent(refund.providerRefundId, 'succeeded')
+    return (await Refund.findById(refundId).lean()) ?? refund.toObject()
+  }
+
+  if (!payment?.providerPaymentIntentId)
+    throw new AppError(409, 'PAYMENT_INTENT_MISSING', 'Payment has no provider payment intent')
 
   const stripe = stripeClient()
   const providerRefund = await stripe.refunds.create(
     {
-      payment_intent: payment.stripePaymentIntentId,
+      payment_intent: payment.providerPaymentIntentId,
       amount: refund.amountMinor,
       metadata: { refundId: refund._id.toString(), refundNumber: refund.refundNumber },
     },
     { idempotencyKey: refund.idempotencyKey },
   )
 
-  refund.stripeRefundId = providerRefund.id
+  refund.providerRefundId = providerRefund.id
   await refund.save()
   return refund.toObject()
+}
+
+// A cash refund still needs a stable reference so `applyRefundEvent` can find it
+// and so the unique index keeps settlement idempotent.
+function cashRefundReference(refund) {
+  return `cash_${refund._id}`
+}
+
+// Stripe's own refund states, mapped onto the two outcomes this service knows.
+// `pending` and `requires_action` are still in flight and are left alone.
+const PROVIDER_OUTCOME = {
+  succeeded: 'succeeded',
+  failed: 'failed',
+  canceled: 'failed',
+}
+
+/**
+ * Re-drives refunds that are stuck in `pending`.
+ *
+ * A refund reaches a terminal state through a provider webhook. If that webhook
+ * is never delivered, or the provider call failed after `createRefund` already
+ * committed, the refund stays `pending` forever with the customer's money
+ * reserved and nothing retrying it. This closes that gap.
+ *
+ * Two distinct stalls are handled:
+ *   - never submitted (`providerRefundId` unset) -> submit it now
+ *   - submitted but unsettled                  -> ask the provider and apply
+ *
+ * Everything it calls is idempotent, so a duplicate run cannot double-refund.
+ *
+ * NOTE: this is safe but not free to run on every replica. Above one instance it
+ * belongs in a single-owner CronJob rather than an in-process interval.
+ */
+export async function reconcilePendingRefunds({ olderThanMs = 15 * 60 * 1000, limit = 50 } = {}) {
+  const summary = { examined: 0, submitted: 0, settled: 0, stillPending: 0, failed: 0 }
+
+  // `updatedAt` rather than `createdAt`: a refund touched moments ago is still
+  // travelling its normal path and should be left to finish.
+  const stale = await Refund.find({
+    status: 'pending',
+    updatedAt: { $lt: new Date(Date.now() - olderThanMs) },
+  })
+    .sort({ updatedAt: 1 })
+    .limit(limit)
+    .lean()
+
+  // Cash refunds never need the processor, so they are recovered even when no
+  // Stripe key is configured. Card refunds are skipped rather than failed.
+  const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY)
+  const stripe = stripeConfigured ? stripeClient() : null
+
+  for (const refund of stale) {
+    const provider = refund.provider ?? 'cash'
+    if (provider === 'stripe' && !stripeConfigured) {
+      summary.stillPending += 1
+      continue
+    }
+    summary.examined += 1
+    try {
+      if (!refund.providerRefundId) {
+        await submitRefundToProvider(refund._id)
+        summary.submitted += 1
+        continue
+      }
+      if (provider === 'cash') {
+        // Reference stamped but never settled — finish it.
+        await applyRefundEvent(refund.providerRefundId, 'succeeded')
+        summary.settled += 1
+        continue
+      }
+      const providerRefund = await stripe.refunds.retrieve(refund.providerRefundId)
+      const outcome = PROVIDER_OUTCOME[providerRefund.status]
+      if (!outcome) {
+        summary.stillPending += 1
+        continue
+      }
+      await applyRefundEvent(refund.providerRefundId, outcome)
+      summary.settled += 1
+    } catch (error) {
+      // One bad refund must not stop the batch — the next run retries it.
+      summary.failed += 1
+      console.error('[refunds] reconcile failed', refund.refundNumber, error.message)
+    }
+  }
+  return summary
 }
 
 /**
  * Applies a verified Stripe refund event. Idempotent: a refund already in a
  * terminal state is left untouched so duplicate webhook deliveries are safe.
  */
-export async function applyRefundEvent(stripeRefundId, outcome) {
+export async function applyRefundEvent(providerRefundId, outcome) {
   const session = await mongoose.startSession()
   try {
     let result
     await session.withTransaction(async () => {
-      const refund = await Refund.findOne({ stripeRefundId }).session(session)
+      const refund = await Refund.findOne({ providerRefundId }).session(session)
       if (!refund) throw new AppError(404, 'REFUND_NOT_FOUND', 'Refund not found')
       if (refund.status !== 'pending') {
         result = refund.toObject()

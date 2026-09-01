@@ -55,7 +55,16 @@ const refundSchema = new mongoose.Schema(
       default: [],
     },
 
-    stripeRefundId: { type: String, sparse: true, unique: true, maxlength: 255 },
+    // Mirrors the payment this refund is against. A `cash` refund is handed back
+    // at the door and settles immediately; a `stripe` refund is submitted to the
+    // processor and settles on its webhook.
+    provider: {
+      type: String,
+      enum: ['cash', 'stripe'],
+      default: 'cash',
+      required: true,
+    },
+    providerRefundId: { type: String, sparse: true, unique: true, maxlength: 255 },
     idempotencyKey: { type: String, required: true, unique: true, maxlength: 160 },
     processedAt: { type: Date },
   },

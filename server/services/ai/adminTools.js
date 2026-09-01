@@ -81,12 +81,22 @@ export const ADMIN_TOOLS = {
         fact('Paid orders (period)', String(result.paidOrdersInPeriod), 'get_revenue_summary', {
           raw: result.paidOrdersInPeriod,
         }),
-        fact('Net revenue (all time)', formatMinor(result.allTimeNetRevenueMinor), 'get_revenue_summary', {
-          raw: result.allTimeNetRevenueMinor,
-        }),
-        fact('Refunded (all time)', formatMinor(result.refundedAllTimeMinor), 'get_revenue_summary', {
-          raw: result.refundedAllTimeMinor,
-        }),
+        fact(
+          'Net revenue (all time)',
+          formatMinor(result.allTimeNetRevenueMinor),
+          'get_revenue_summary',
+          {
+            raw: result.allTimeNetRevenueMinor,
+          },
+        ),
+        fact(
+          'Refunded (all time)',
+          formatMinor(result.refundedAllTimeMinor),
+          'get_revenue_summary',
+          {
+            raw: result.refundedAllTimeMinor,
+          },
+        ),
       ]
     },
   },
@@ -196,7 +206,10 @@ export const ADMIN_TOOLS = {
       strict: true,
       input_schema: {
         type: 'object',
-        properties: { status: { type: ['string', 'null'] }, paymentStatus: { type: ['string', 'null'] } },
+        properties: {
+          status: { type: ['string', 'null'] },
+          paymentStatus: { type: ['string', 'null'] },
+        },
         required: ['status', 'paymentStatus'],
         additionalProperties: false,
       },
@@ -204,7 +217,15 @@ export const ADMIN_TOOLS = {
     async execute(input) {
       const overview = await getPlatformOverview({})
       // Enum-checked: an unrecognised status is dropped rather than queried.
-      const statuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded']
+      const statuses = [
+        'pending',
+        'confirmed',
+        'processing',
+        'shipped',
+        'delivered',
+        'cancelled',
+        'refunded',
+      ]
       const payments = ['pending', 'paid', 'failed', 'partially_refunded', 'refunded']
       const filtered = await listPlatformOrders({
         limit: 1,

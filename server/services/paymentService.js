@@ -6,10 +6,12 @@ import { InventoryReservation } from '../models/InventoryReservation.js'
 import { Order } from '../models/Order.js'
 import { OrderItem } from '../models/OrderItem.js'
 import { Payment } from '../models/Payment.js'
+import { Seller } from '../models/Seller.js'
 import { SellerOrder } from '../models/SellerOrder.js'
 import { WebhookEvent } from '../models/WebhookEvent.js'
 import { AppError } from '../utils/errors.js'
 import { applyRedemption, releaseRedemptions } from './couponService.js'
+import { notifyNewSellerOrder, notifyOrderConfirmation } from './notificationService.js'
 
 function stripeClient() {
   if (!process.env.STRIPE_SECRET_KEY)
@@ -38,8 +40,8 @@ export async function createCheckoutSession(customerId, orderId, idempotencyKey)
       throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Idempotency key belongs to another order')
     return {
       payment: existing,
-      sessionId: existing.stripeSessionId,
-      url: existing.stripeCheckoutUrl,
+      sessionId: existing.providerSessionId,
+      url: existing.providerCheckoutUrl,
     }
   }
 
@@ -58,8 +60,9 @@ export async function createCheckoutSession(customerId, orderId, idempotencyKey)
   const payment = await Payment.create({
     orderId,
     customerId,
-    stripeSessionId: sessionId,
-    stripeCheckoutUrl: successUrl,
+    provider: 'cash',
+    providerSessionId: sessionId,
+    providerCheckoutUrl: successUrl,
     amountMinor: order.totalMinor,
     currency: order.currency,
     idempotencyKey: key,
@@ -73,6 +76,8 @@ export async function createCheckoutSession(customerId, orderId, idempotencyKey)
 // held inventory and redeeming any coupon — the same work the Stripe
 // `checkout.session.completed` webhook did, now that checkout settles locally.
 async function settlePaymentPaid(paymentId) {
+  // Captured inside the transaction, acted on only after it commits.
+  let settled = null
   const session = await mongoose.startSession()
   try {
     await session.withTransaction(async () => {
@@ -80,6 +85,7 @@ async function settlePaymentPaid(paymentId) {
       if (!payment || payment.status === 'paid') return
       const order = await Order.findById(payment.orderId).session(session)
       if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found')
+      settled = { orderId: order._id, customerId: order.customerId }
       await finalizeReservations(order._id, 'commit', session)
       await applyRedemption(order._id, session)
       payment.status = 'paid'
@@ -102,6 +108,37 @@ async function settlePaymentPaid(paymentId) {
   } finally {
     await session.endSession()
   }
+
+  // Emitted only after the transaction has committed. A notification for an
+  // order that was rolled back is worse than no notification, and the helpers
+  // are idempotent on `eventKey`, so a retry cannot duplicate them.
+  if (settled) await announceOrderConfirmed(settled.orderId, settled.customerId)
+}
+
+/**
+ * Tells the customer their order is confirmed, and each seller that they have
+ * work to do. Failure here must never fail a payment that already succeeded, so
+ * problems are logged rather than thrown.
+ */
+async function announceOrderConfirmed(orderId, customerId) {
+  try {
+    await notifyOrderConfirmation(customerId, orderId)
+
+    const sellerOrders = await SellerOrder.find({ orderId }).select('_id sellerId').lean()
+    const sellers = await Seller.find({ _id: { $in: sellerOrders.map((item) => item.sellerId) } })
+      .select('_id ownerUserId')
+      .lean()
+    const ownerBySeller = new Map(sellers.map((item) => [item._id.toString(), item.ownerUserId]))
+
+    await Promise.all(
+      sellerOrders.map((sellerOrder) => {
+        const ownerUserId = ownerBySeller.get(sellerOrder.sellerId.toString())
+        return ownerUserId ? notifyNewSellerOrder(ownerUserId, sellerOrder._id) : null
+      }),
+    )
+  } catch (error) {
+    console.error('[notifications] order confirmation failed', String(orderId), error.message)
+  }
 }
 
 export async function getPayment(customerId, orderId) {
@@ -110,11 +147,11 @@ export async function getPayment(customerId, orderId) {
   return Payment.findOne({ orderId }).sort({ createdAt: -1 }).lean()
 }
 
-export async function getPaymentByCheckoutSession(customerId, stripeSessionId) {
-  if (!stripeSessionId || stripeSessionId.length > 255)
+export async function getPaymentByCheckoutSession(customerId, providerSessionId) {
+  if (!providerSessionId || providerSessionId.length > 255)
     throw new AppError(400, 'INVALID_SESSION_ID', 'Invalid checkout session')
 
-  const payment = await Payment.findOne({ stripeSessionId, customerId }).lean()
+  const payment = await Payment.findOne({ providerSessionId, customerId }).lean()
   if (!payment) throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment record not found')
 
   const order = await Order.findOne({ _id: payment.orderId, customerId }).lean()
@@ -188,16 +225,16 @@ const REFUND_EVENTS = {
 async function applyRefundWebhook(event) {
   const { applyRefundEvent } = await import('./refundService.js')
   const object = event.data.object
-  const stripeRefundId = object.id
+  const providerRefundId = object.id
   const succeeded = REFUND_EVENTS[event.type] && object.status === 'succeeded'
-  await applyRefundEvent(stripeRefundId, succeeded ? 'succeeded' : 'failed')
+  await applyRefundEvent(providerRefundId, succeeded ? 'succeeded' : 'failed')
 }
 
 async function applyPaymentEvent(event) {
   const session = await mongoose.startSession()
   try {
     await session.withTransaction(async () => {
-      const payment = await Payment.findOne({ stripeSessionId: event.data.object.id }).session(
+      const payment = await Payment.findOne({ providerSessionId: event.data.object.id }).session(
         session,
       )
       if (!payment) throw new AppError(404, 'PAYMENT_NOT_FOUND', 'Payment record not found')

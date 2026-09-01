@@ -1,4 +1,5 @@
 import { AppError } from '../utils/errors.js'
+import { IMAGE_URL_MESSAGE, isSafeImageUrl } from '../utils/url.js'
 
 const bodyString = (value, field, min, max) =>
   typeof value === 'string' && value.trim().length >= min && value.trim().length <= max
@@ -18,8 +19,13 @@ export function validateProduct(request, _response, next) {
     product.categoryIds.length > 5
   )
     errors.push('categoryIds must contain 1 to 5 IDs')
-  if (!Array.isArray(product.images) || product.images.length < 1 || product.images.length > 12)
+  if (!Array.isArray(product.images) || product.images.length < 1 || product.images.length > 12) {
     errors.push('images must contain 1 to 12 images')
+  } else if (!product.images.every((image) => isSafeImageUrl(image?.url))) {
+    // Sellers supply these and every shopper renders them, so a `javascript:` or
+    // `data:` URL here would be stored XSS.
+    errors.push(`every image url ${IMAGE_URL_MESSAGE}`)
+  }
   if (typeof product.hasVariants !== 'boolean') errors.push('hasVariants must be boolean')
   if (!product.hasVariants && (!Number.isSafeInteger(product.priceMinor) || product.priceMinor < 0))
     errors.push('priceMinor must be a non-negative integer')

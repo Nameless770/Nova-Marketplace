@@ -84,7 +84,10 @@ export function CartPage() {
                 −
               </button>
               <strong>{item.quantity}</strong>
-              <button onClick={() => update(item, item.quantity + 1)} aria-label="Increase quantity">
+              <button
+                onClick={() => update(item, item.quantity + 1)}
+                aria-label="Increase quantity"
+              >
                 +
               </button>
             </div>

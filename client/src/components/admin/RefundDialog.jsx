@@ -78,9 +78,7 @@ export function RefundDialog({ order, onClose, onRefunded }) {
                 required
               />
             </label>
-            {overLimit && (
-              <p className="dialog-warn">Amount exceeds the refundable balance.</p>
-            )}
+            {overLimit && <p className="dialog-warn">Amount exceeds the refundable balance.</p>}
 
             <label>
               Reason (required)

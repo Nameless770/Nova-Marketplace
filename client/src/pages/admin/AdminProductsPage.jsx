@@ -46,7 +46,9 @@ export function AdminProductsPage() {
               type="button"
               className="text-button"
               disabled={pendingId === product._id}
-              onClick={() => run(product._id, () => adminApi.setProductStatus(product._id, 'active'))}
+              onClick={() =>
+                run(product._id, () => adminApi.setProductStatus(product._id, 'active'))
+              }
             >
               Approve
             </button>

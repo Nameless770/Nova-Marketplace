@@ -70,6 +70,30 @@ export function rateLimit({ max = 60, windowMs = 60_000, message = 'Too many req
 }
 
 /**
+ * A ceiling across the whole API, in addition to the tighter per-route limits.
+ *
+ * Without this, any route that does not opt into `rateLimit` is unthrottled —
+ * including search, which is the most database-expensive public endpoint. Sized
+ * so ordinary browsing never reaches it: it exists to blunt scripted abuse, not
+ * to shape normal traffic.
+ *
+ * Keyed on IP only. Deliberately *not* keyed on path, so a caller cannot
+ * multiply their budget by spreading requests across endpoints.
+ */
+export function globalRateLimit({ max = 600, windowMs = 60_000 } = {}) {
+  return function globalLimiter(request, response, next) {
+    // Health checks are how the orchestrator decides whether to keep this pod in
+    // rotation; throttling them would turn a traffic spike into an outage.
+    if (request.path.startsWith('/api/health')) return next()
+
+    const { allowed, retryAfterSeconds } = consumeBucket(`global:${request.ip}`, max, windowMs)
+    if (!allowed)
+      return next(tooManyRequests(response, retryAfterSeconds, 'Too many requests. Slow down.'))
+    next()
+  }
+}
+
+/**
  * Brute-force protection for credential endpoints.
  *
  * Counts only *failed* attempts, so a legitimate user is never locked out by

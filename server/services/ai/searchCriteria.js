@@ -15,7 +15,7 @@ const RELATIVE_PRICE = ['cheap', 'budget', 'affordable', 'inexpensive', 'low pri
 export const NL_SEARCH_TOOL = {
   name: 'product_search_criteria',
   description:
-    'Translate a shopper\'s natural-language product search into structured criteria. Use null when the shopper did not specify something — never guess.',
+    "Translate a shopper's natural-language product search into structured criteria. Use null when the shopper did not specify something — never guess.",
   strict: true,
   input_schema: {
     type: 'object',
@@ -126,8 +126,7 @@ export async function validateCriteria(raw, { fallbackQuery = '' } = {}) {
   }
 
   const minRating = raw?.minRating
-  if (typeof minRating === 'number' && minRating >= 0 && minRating <= 5)
-    query.minRating = minRating
+  if (typeof minRating === 'number' && minRating >= 0 && minRating <= 5) query.minRating = minRating
   else if (minRating != null) dropped.push('minRating')
 
   if (raw?.inStockOnly === true) query.availability = 'in_stock'
@@ -142,7 +141,8 @@ export async function validateCriteria(raw, { fallbackQuery = '' } = {}) {
     })
       .select('_id')
       .lean()
-    if (category && mongoose.isValidObjectId(category._id)) query.categoryId = category._id.toString()
+    if (category && mongoose.isValidObjectId(category._id))
+      query.categoryId = category._id.toString()
     else dropped.push('category')
   }
 

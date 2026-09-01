@@ -28,7 +28,10 @@ function meta({ page, limit }, total) {
 
 // Anchored + escaped so admin search cannot inject regex or force a ReDoS.
 function searchRegex(term) {
-  const escaped = term.trim().slice(0, 80).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const escaped = term
+    .trim()
+    .slice(0, 80)
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   return new RegExp(`^${escaped}`, 'i')
 }
 
@@ -263,8 +266,7 @@ export async function listPlatformUsers(query) {
 }
 
 export async function setUserStatus(adminUserId, userId, status, context = {}) {
-  if (!mongoose.isValidObjectId(userId))
-    throw new AppError(404, 'USER_NOT_FOUND', 'User not found')
+  if (!mongoose.isValidObjectId(userId)) throw new AppError(404, 'USER_NOT_FOUND', 'User not found')
   if (!['active', 'suspended'].includes(status))
     throw new AppError(400, 'INVALID_STATUS', 'Status must be active or suspended')
   if (userId === adminUserId.toString())

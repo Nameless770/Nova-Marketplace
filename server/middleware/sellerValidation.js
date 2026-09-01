@@ -1,4 +1,5 @@
 import { AppError } from '../utils/errors.js'
+import { IMAGE_URL_MESSAGE, isSafeImageUrl } from '../utils/url.js'
 
 const emailPattern = /^\S+@\S+\.\S+$/
 
@@ -30,14 +31,13 @@ export function validateStoreUpdate(request, _response, next) {
     (typeof description !== 'string' || description.trim().length > 2000)
   )
     errors.push('description must be at most 2000 characters')
+  // Same reasoning as product images: seller-supplied and rendered to shoppers,
+  // so the scheme is checked rather than only the length.
   if (
     image !== undefined &&
-    (typeof image !== 'object' ||
-      image === null ||
-      typeof image.url !== 'string' ||
-      image.url.length > 2048)
+    (typeof image !== 'object' || image === null || !isSafeImageUrl(image.url))
   )
-    errors.push('image.url is required and must be at most 2048 characters')
+    errors.push(`image.url ${IMAGE_URL_MESSAGE}`)
   if (errors.length) return next(new AppError(400, 'VALIDATION_ERROR', errors.join('; ')))
   next()
 }
