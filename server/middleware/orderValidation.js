@@ -1,6 +1,9 @@
 import { AppError } from '../utils/errors.js'
 
-const fields = ['firstName', 'lastName', 'line1', 'city', 'state', 'postalCode', 'country']
+// Street line, city and state were dropped from checkout in favour of "send to
+// my current location", so they are no longer required. line1 still carries the
+// captured location string when present.
+const fields = ['firstName', 'lastName', 'postalCode', 'country']
 
 function validateAddress(address, name) {
   if (!address || typeof address !== 'object') return `${name} is required`

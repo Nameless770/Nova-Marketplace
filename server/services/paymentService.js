@@ -44,35 +44,54 @@ export async function createCheckoutSession(customerId, orderId, idempotencyKey)
 
   const items = await OrderItem.find({ orderId }).lean()
   if (!items.length) throw new AppError(409, 'ORDER_EMPTY', 'Order has no items')
-  const stripe = stripeClient()
-  const session = await stripe.checkout.sessions.create(
-    {
-      mode: 'payment',
-      line_items: items.map((item) => ({
-        quantity: item.quantity,
-        price_data: {
-          currency: order.currency.toLowerCase(),
-          unit_amount: item.unitPriceMinor,
-          product_data: { name: `${item.productSnapshot.title} - ${item.variantSnapshot.name}` },
-        },
-      })),
-      metadata: { orderId: order._id.toString(), customerId: customerId.toString() },
-      success_url: process.env.PAYMENT_SUCCESS_URL,
-      cancel_url: process.env.PAYMENT_CANCEL_URL,
-    },
-    { idempotencyKey: key },
-  )
+
+  // No external payment processor: record the payment and settle it right away,
+  // running the same commit path a confirmed Stripe webhook used to trigger.
+  // The success URL points the customer straight at the confirmation page.
+  const sessionId = `local_${crypto.randomUUID()}`
+  const successUrl = (
+    process.env.PAYMENT_SUCCESS_URL ||
+    'http://localhost:5173/payment/success?session_id={CHECKOUT_SESSION_ID}'
+  ).replace('{CHECKOUT_SESSION_ID}', sessionId)
+
   const payment = await Payment.create({
     orderId,
     customerId,
-    stripeSessionId: session.id,
-    stripeCheckoutUrl: session.url,
-    stripePaymentIntentId: session.payment_intent ?? undefined,
+    stripeSessionId: sessionId,
+    stripeCheckoutUrl: successUrl,
     amountMinor: order.totalMinor,
     currency: order.currency,
     idempotencyKey: key,
   })
-  return { payment, sessionId: session.id, url: session.url }
+  await settlePaymentPaid(payment._id)
+  const settled = await Payment.findById(payment._id).lean()
+  return { payment: settled, sessionId, url: successUrl }
+}
+
+// Marks a pending payment (and its order) paid in one transaction, committing the
+// held inventory and redeeming any coupon — the same work the Stripe
+// `checkout.session.completed` webhook did, now that checkout settles locally.
+async function settlePaymentPaid(paymentId) {
+  const session = await mongoose.startSession()
+  try {
+    await session.withTransaction(async () => {
+      const payment = await Payment.findById(paymentId).session(session)
+      if (!payment || payment.status === 'paid') return
+      const order = await Order.findById(payment.orderId).session(session)
+      if (!order) throw new AppError(404, 'ORDER_NOT_FOUND', 'Order not found')
+      await finalizeReservations(order._id, 'commit', session)
+      await applyRedemption(order._id, session)
+      payment.status = 'paid'
+      payment.paidAt = new Date()
+      order.paymentStatus = 'paid'
+      order.status = 'confirmed'
+      order.placedAt = new Date()
+      await payment.save({ session })
+      await order.save({ session })
+    })
+  } finally {
+    await session.endSession()
+  }
 }
 
 export async function getPayment(customerId, orderId) {

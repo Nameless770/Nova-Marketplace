@@ -4,10 +4,12 @@ const addressSnapshotSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true, trim: true, maxlength: 80 },
     lastName: { type: String, required: true, trim: true, maxlength: 80 },
-    line1: { type: String, required: true, trim: true, maxlength: 120 },
+    // line1 now holds the captured "current location" string; city/state were
+    // removed from checkout, so all three are optional on the snapshot.
+    line1: { type: String, trim: true, maxlength: 120 },
     line2: { type: String, trim: true, maxlength: 120 },
-    city: { type: String, required: true, trim: true, maxlength: 80 },
-    state: { type: String, required: true, trim: true, maxlength: 80 },
+    city: { type: String, trim: true, maxlength: 80 },
+    state: { type: String, trim: true, maxlength: 80 },
     postalCode: { type: String, required: true, trim: true, maxlength: 20 },
     country: { type: String, required: true, uppercase: true, minlength: 2, maxlength: 2 },
   },

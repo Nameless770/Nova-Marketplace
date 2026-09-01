@@ -27,11 +27,11 @@ export function PaymentSuccessPage() {
   return (
     <section className="state-panel">
       <p className="eyebrow">Payment returned</p>
-      <h2>{paid ? 'Payment confirmed' : 'Payment is being verified'}</h2>
+      <h2>{paid ? 'Payment confirmed' : 'Payment is being processed'}</h2>
       <p>
         {paid
-          ? 'Your order is confirmed.'
-          : 'Stripe sent you back successfully. Final confirmation still depends on the verified webhook.'}
+          ? 'Your payment went through and your order is confirmed.'
+          : 'Your payment is still being processed. This page will reflect the final status.'}
       </p>
       {order && (
         <div className="summary-lines">

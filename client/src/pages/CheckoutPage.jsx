@@ -10,8 +10,6 @@ const emptyAddress = {
   firstName: '',
   lastName: '',
   line1: '',
-  city: '',
-  state: '',
   postalCode: '',
   country: '',
 }
@@ -19,9 +17,6 @@ const emptyAddress = {
 const addressFields = [
   { name: 'firstName', label: 'First name' },
   { name: 'lastName', label: 'Last name' },
-  { name: 'line1', label: 'Address' },
-  { name: 'city', label: 'City' },
-  { name: 'state', label: 'State' },
   { name: 'postalCode', label: 'Postal code' },
   { name: 'country', label: 'Country (2-letter code)', maxLength: 2, placeholder: 'US' },
 ]
@@ -34,8 +29,42 @@ export function CheckoutPage() {
   const [appliedCoupon, setAppliedCoupon] = useState(null)
   const [couponError, setCouponError] = useState(null)
   const [couponLoading, setCouponLoading] = useState(false)
+  const [geoStatus, setGeoStatus] = useState('idle') // idle | locating | done | error
+  const [geoError, setGeoError] = useState(null)
   const checkoutIdempotencyKey = useRef(crypto.randomUUID())
   const navigate = useNavigate()
+
+  function useCurrentLocation() {
+    if (!('geolocation' in navigator)) {
+      setGeoError('Location is not available in this browser.')
+      setGeoStatus('error')
+      return
+    }
+    setGeoStatus('locating')
+    setGeoError(null)
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        setAddress((prev) => ({
+          ...prev,
+          line1: `Current location (${latitude.toFixed(5)}, ${longitude.toFixed(5)})`,
+        }))
+        setGeoStatus('done')
+      },
+      (positionError) => {
+        const messages = {
+          1: 'Location permission was denied. Allow location for this site, then try again.',
+          2: 'Your location could not be determined. Please try again.',
+          3: 'That took too long. Please try again — it is usually quicker the second time.',
+        }
+        setGeoError(messages[positionError.code] || 'Could not get your location.')
+        setGeoStatus('error')
+      },
+      // A network fix (not GPS) responds fast, and a recent cached position is
+      // fine for a shipping location — both make timeouts far less likely.
+      { enableHighAccuracy: false, timeout: 30000, maximumAge: 300000 },
+    )
+  }
   const loadCart = useCallback(() => cartApi.get(), [])
   const {
     data: cartData,
@@ -174,9 +203,31 @@ export function CheckoutPage() {
             />
           </label>
         ))}
+        <div className="location-field">
+          <button
+            type="button"
+            className="secondary-action"
+            onClick={useCurrentLocation}
+            disabled={geoStatus === 'locating'}
+          >
+            {geoStatus === 'locating'
+              ? 'Getting your location…'
+              : geoStatus === 'done'
+                ? 'Update my location'
+                : '📍 Send to my current location'}
+          </button>
+          {geoStatus === 'done' && (
+            <p className="location-captured">Shipping to {address.line1}</p>
+          )}
+          {geoStatus === 'error' && geoError && (
+            <p className="location-error" role="alert">
+              {geoError}
+            </p>
+          )}
+        </div>
         {error && <ErrorState message={error} />}
-        <button className="primary-action" disabled={loading}>
-          {loading ? 'Preparing payment' : 'Continue to secure payment'}
+        <button className="primary-action" disabled={loading || geoStatus !== 'done'}>
+          {loading ? 'Processing payment' : 'Pay now'}
         </button>
         <button type="button" className="text-button" onClick={() => navigate('/cart')}>
           Back to cart

@@ -182,6 +182,33 @@ button {
   font-weight: 700;
   text-decoration: none;
 }
+/* Cart icon carries a live item count and sits quieter than the coral links,
+   so the badge is the only coral in it. */
+.nav-account a.cart-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink);
+}
+.nav-account a.cart-icon:hover {
+  color: var(--primary);
+}
+.cart-badge {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
 .page-content {
   width: min(1200px, 100%);
   flex: 1;
@@ -306,6 +333,44 @@ h2 {
   height: 100%;
   object-fit: cover;
 }
+/* Wraps the image link so the wishlist heart can sit over it. */
+.product-media {
+  position: relative;
+}
+.product-card .wishlist-heart {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  margin: 0;
+  width: 40px;
+  height: 40px;
+  min-height: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-card) 82%, transparent);
+  color: var(--muted);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition:
+    transform 0.12s ease,
+    color 0.12s ease,
+    border-color 0.12s ease;
+}
+.product-card .wishlist-heart:hover {
+  transform: scale(1.08);
+  color: var(--primary);
+}
+.product-card .wishlist-heart.is-active {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+.product-card .wishlist-heart:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 .product-card-body {
   display: flex;
   flex: 1;
@@ -357,6 +422,209 @@ h2 {
 .load-more {
   display: block;
   margin: 1.5rem auto 0;
+}
+/* The card's primary action — coral, kept for a genuine CTA. */
+.product-card .add-to-cart {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  cursor: pointer;
+}
+.product-card .add-to-cart:hover {
+  filter: brightness(0.96);
+}
+.product-card .add-to-cart:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+/* Once in the cart, the button collapses to a count and expands to a stepper. */
+.product-card .add-to-cart.in-cart {
+  background: transparent;
+  color: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
+}
+.product-card .qty-stepper {
+  margin-top: var(--s-md);
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: stretch;
+  border: 1px solid var(--primary);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.product-card .qty-stepper button {
+  margin: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--primary);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.product-card .qty-stepper button:hover {
+  filter: brightness(0.96);
+}
+.product-card .qty-stepper button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.qty-value {
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+/* ---- Home page ---- */
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 4vw, 2.75rem);
+}
+.promo-band {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-md);
+}
+.promo-tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-xs);
+  min-height: 190px;
+  padding: var(--s-lg);
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  text-decoration: none;
+  transition:
+    transform 0.14s ease,
+    box-shadow 0.14s ease;
+}
+.promo-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -20px rgba(20, 20, 19, 0.55);
+}
+.promo-eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.promo-title {
+  flex: 1;
+  margin: 0;
+  /* Inherit the tile's colour — the global `h2 { color: --ink }` would other-
+     wise paint dark text on the dark tile. */
+  color: inherit;
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  font-weight: 500;
+  line-height: 1.15;
+}
+.promo-cta {
+  margin-top: auto;
+  font-size: 14px;
+  font-weight: 600;
+}
+.promo-coral {
+  background: var(--primary);
+  color: #fff;
+}
+.promo-cream {
+  background: var(--surface-card);
+  color: var(--ink);
+  border-color: var(--hairline);
+}
+.promo-cream .promo-cta {
+  color: var(--primary);
+}
+.promo-dark {
+  background: #181715;
+  color: #faf9f5;
+}
+.promo-dark .promo-cta {
+  color: var(--primary);
+}
+.deal-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--s-md);
+}
+.deal-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-lg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface-card);
+}
+.deal-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--s-md);
+  color: var(--ink);
+  text-decoration: none;
+}
+.deal-card-head h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+.deal-chevron {
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+}
+.deal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-xs);
+}
+.deal-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--surface-cream-strong);
+  text-decoration: none;
+}
+.deal-thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+.deal-price {
+  display: block;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--canvas);
+}
+.deal-grid-skeleton span {
+  aspect-ratio: 1;
+  border-radius: var(--r-md);
+  background: var(--surface-cream-strong);
+}
+.deal-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.deal-more {
+  margin-top: var(--s-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
 }
 .detail-layout {
   display: grid;
@@ -502,8 +770,29 @@ h2 {
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
-.address-form label:last-of-type {
-  grid-column: span 2;
+/* Country is no longer the odd field out, so it stays in its column; the
+   location row, inline errors and actions take the full width instead. */
+.address-form > .location-field,
+.address-form > .state-panel,
+.address-form > .primary-action,
+.address-form > .text-button {
+  grid-column: 1 / -1;
+}
+.location-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.location-captured {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0;
+}
+.location-error {
+  color: var(--coral);
+  font-size: 0.9rem;
+  margin: 0;
 }
 .success-message {
   grid-column: span 2;
