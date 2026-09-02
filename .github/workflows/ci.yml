@@ -374,8 +374,15 @@ jobs:
       # Fails the job on a HIGH or CRITICAL vulnerability that has a fix
       # available. Unfixed findings are reported but do not block, since there is
       # no action to take on them yet.
+      #
+      # Pinned by commit SHA rather than by tag, unlike every other action here.
+      # The previous pin was the bare tag `0.28.0`, which stopped resolving when
+      # this project moved to immutable `v`-prefixed releases and deleted the
+      # un-prefixed tags — the job then failed before the step even ran. A tag is
+      # a mutable pointer someone else controls; a SHA is not. Trivy publishes no
+      # floating major tag (it is 0.x), so there is no `@v0` to track instead.
       - name: Scan image for vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: scan-target:${{ matrix.name }}
           format: table
