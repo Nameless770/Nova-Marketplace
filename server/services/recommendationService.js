@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { logger } from '../utils/logger.js'
 import { Cart } from '../models/Cart.js'
 import { Category } from '../models/Category.js'
 import { Inventory } from '../models/Inventory.js'
@@ -495,7 +496,7 @@ async function writeView(userId, product) {
       { upsert: true },
     )
   } catch (error) {
-    console.warn('[recommendations] could not record view:', error.message)
+    logger.warn({ err: error }, 'could not record product view')
   }
 }
 

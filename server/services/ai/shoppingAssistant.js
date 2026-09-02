@@ -1,4 +1,5 @@
 import { AppError } from '../../utils/errors.js'
+import { logger } from '../../utils/logger.js'
 import { criteriaToSearchQuery, fetchCandidates } from './candidates.js'
 import { rehydrate, sanitizeModelProse, validateRecommendations } from './grounding.js'
 import {
@@ -83,9 +84,14 @@ export async function assist(user, rawQuery) {
 
   if (rejected.length) {
     // A rising rate here means a prompt or model change regressed grounding.
-    console.warn(
-      `[ai:grounding] dropped ${rejected.length} ungrounded recommendation(s)`,
-      JSON.stringify({ promptVersion: PROMPT_VERSION, userId: user?._id?.toString(), rejected }),
+    logger.warn(
+      {
+        dropped: rejected.length,
+        promptVersion: PROMPT_VERSION,
+        userId: user?._id?.toString(),
+        rejected,
+      },
+      'dropped ungrounded recommendations',
     )
   }
 

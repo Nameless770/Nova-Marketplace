@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { logger } from '../utils/logger.js'
 import { AuditLog } from '../models/AuditLog.js'
 
 export const AUDIT = {
@@ -37,12 +38,15 @@ export async function recordAudit(entry, session = null) {
     if (session) await AuditLog.create([document], { session })
     else await AuditLog.create(document)
   } catch (error) {
-    console.error('[audit] FAILED TO RECORD PRIVILEGED ACTION', {
-      action: entry?.action,
-      actorId: entry?.actorId?.toString?.(),
-      targetId: entry?.targetId?.toString?.(),
-      error: error.message,
-    })
+    logger.error(
+      {
+        err: error,
+        action: entry?.action,
+        actorId: entry?.actorId?.toString?.(),
+        targetId: entry?.targetId?.toString?.(),
+      },
+      'FAILED TO RECORD PRIVILEGED ACTION',
+    )
   }
 }
 

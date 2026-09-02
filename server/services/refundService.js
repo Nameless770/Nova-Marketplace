@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { logger } from '../utils/logger.js'
 import Stripe from 'stripe'
 import { Inventory } from '../models/Inventory.js'
 import { InventoryHistory } from '../models/InventoryHistory.js'
@@ -449,7 +450,7 @@ export async function reconcilePendingRefunds({ olderThanMs = 15 * 60 * 1000, li
     } catch (error) {
       // One bad refund must not stop the batch — the next run retries it.
       summary.failed += 1
-      console.error('[refunds] reconcile failed', refund.refundNumber, error.message)
+      logger.error({ err: error, refundNumber: refund.refundNumber }, 'refund reconcile failed')
     }
   }
   return summary

@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { logger } from './logger.js'
 
 const ALGORITHM = 'HS256'
 const ISSUER = 'marketplace-api'
@@ -34,7 +35,7 @@ function jwtSecret() {
     if (weakness) {
       const detail = `JWT_SECRET is ${weakness}. Generate one with: openssl rand -base64 48`
       if (process.env.NODE_ENV === 'production') throw new Error(detail)
-      console.warn(`[security] ${detail}`)
+      logger.warn({ detail }, 'weak JWT secret')
     }
   }
   return secret

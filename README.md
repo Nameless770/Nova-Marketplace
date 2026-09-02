@@ -10,8 +10,8 @@ built so the model can influence _selection_ but never _facts_.
 
 > **On accuracy.** This README distinguishes what is implemented and tested from what is written
 > but unverified. Sections describing infrastructure that has never been executed
-> ([Docker](#running-with-docker), [Kubernetes](#kubernetes-deployment)) and capabilities that are
-> not built ([Monitoring](#monitoring)) say so explicitly.
+> ([Docker](#running-with-docker), [Kubernetes](#kubernetes-deployment)) say so explicitly, as do
+> the parts of [Monitoring](#monitoring) that the application emits but nothing yet collects.
 
 ---
 
@@ -104,8 +104,8 @@ These are load-bearing. Breaking one causes a subtle bug rather than a crash.
 
 ### Not built
 
-Seller payouts and ledger · outbox pattern · refund reconciliation worker · Redis · analytics
-rollups · **frontend tests** · **application monitoring** ([see below](#monitoring)).
+Seller payouts and ledger · outbox pattern · Redis · analytics rollups · metric collection
+infrastructure ([see Monitoring](#monitoring)) · error tracking (Sentry).
 
 ---
 
@@ -147,18 +147,19 @@ use `MongoMemoryReplSet`; Docker Compose runs `--replSet rs0`.
 
 ## Tech stack
 
-| Layer     | Technology                                                    |
-| --------- | ------------------------------------------------------------- |
-| Frontend  | React 19, Vite, React Router 7, Axios, Leaflet (delivery map) |
-| Backend   | Node.js 22, Express 5, pure ESM (`"type": "module"`)          |
-| Database  | MongoDB with Mongoose 8 — replica set required                |
-| Auth      | JSON Web Tokens (`jsonwebtoken`), bcrypt password hashing     |
-| AI        | Anthropic SDK, plus an OpenAI-compatible transport            |
-| Payments  | Cash on delivery; Stripe SDK retained for the refund path     |
-| Testing   | Vitest + Supertest against `mongodb-memory-server`            |
-| Tooling   | ESLint (flat config), Prettier                                |
-| CI        | GitHub Actions                                                |
-| Packaging | Docker (multi-stage), Kubernetes manifests                    |
+| Layer         | Technology                                                        |
+| ------------- | ----------------------------------------------------------------- |
+| Frontend      | React 19, Vite, React Router 7, Axios, Leaflet (delivery map)     |
+| Backend       | Node.js 22, Express 5, pure ESM (`"type": "module"`)              |
+| Database      | MongoDB with Mongoose 8 — replica set required                    |
+| Auth          | JSON Web Tokens (`jsonwebtoken`), bcrypt password hashing         |
+| AI            | Anthropic SDK, plus an OpenAI-compatible transport                |
+| Payments      | Cash on delivery; Stripe SDK retained for the refund path         |
+| Observability | `pino` structured logging, `prom-client` metrics                  |
+| Testing       | Vitest + Supertest (backend), Vitest + Testing Library (frontend) |
+| Tooling       | ESLint (flat config), Prettier                                    |
+| CI            | GitHub Actions                                                    |
+| Packaging     | Docker (multi-stage), Kubernetes manifests                        |
 
 ---
 
@@ -438,10 +439,11 @@ the model is allowed to influence.
 ## Testing
 
 ```bash
-npm test --prefix server
+npm test --prefix server   # backend
+npm test --prefix client   # frontend
 ```
 
-**156 tests across 15 suites**, all passing. Vitest and Supertest run against an in-memory MongoDB
+**197 backend tests across 18 suites** and **27 frontend tests across 5 suites**, all passing. Vitest and Supertest run against an in-memory MongoDB
 replica set, so transactions behave as they do in production.
 
 Two standing conventions:
@@ -452,9 +454,13 @@ Two standing conventions:
 
 `test/setup.js` awaits index creation before tests run — `$text` queries fail outright without it.
 
-> **Gap: there are no frontend tests.** The client has roughly 25 components and zero coverage.
-> Every UI claim in this project has been verified manually and will not survive a refactor
-> unattended. This is the single largest testing gap.
+Frontend tests use Vitest with React Testing Library, and target the seams most likely to break
+silently rather than a coverage number: the cart context's quantity and removal logic, the order
+tracker's status-to-step mapping, the product card's stepper and wishlist toggle, and the AI
+assistant's loading, error and no-match branches.
+
+> Coverage is deliberately partial. Many components are still untested; the ones that carry state
+> transitions or failure handling are not.
 
 Note on the runner: the suite is **Vitest**, not Jest. It is Jest-API compatible, and this project
 is pure ESM where Jest's ESM plus module mocking is painful.
@@ -519,25 +525,68 @@ above one replica:
 
 ## Monitoring
 
-> **Status: not implemented.** The application has **no logging library, no metrics endpoint, and
-> no tracing.** The server's only dependencies are `@anthropic-ai/sdk`, `bcrypt`, `cors`, `dotenv`,
-> `express`, `helmet`, `jsonwebtoken`, `mongoose` and `stripe` — there is no `pino`, no
-> `prom-client`, no APM agent. Errors are written to `console.error`.
+The service emits **structured logs** and **Prometheus metrics** in-process. There is no collection
+infrastructure in this repository — see [what is not here](#not-collected-here) below.
 
-What **does** exist today:
+### Health
 
 | Endpoint                | Question it answers   | Touches DB |
 | ----------------------- | --------------------- | ---------- |
 | `GET /api/health`       | Is the process alive? | No         |
 | `GET /api/health/ready` | Can it serve traffic? | Yes        |
 
-The split is intentional and is the part worth keeping: liveness must not depend on the database,
-or a slow query gets the container killed; readiness must, or traffic is routed to a pod that
-cannot serve it. Both are wired to the Kubernetes probes described above.
+The split is intentional: liveness must not depend on the database, or a slow query gets the
+container killed; readiness must, or traffic is routed to a pod that cannot serve it. Both are wired
+to the Kubernetes probes described above.
 
-A full observability design exists (structured logging with `pino`, Prometheus metrics via
-`prom-client`, Grafana dashboards, Loki for logs, Alertmanager routing, Sentry for error tracking),
-but **none of it is in the codebase**. Implementing it is tracked as the next infrastructure task.
+### Logging
+
+`pino` writes one JSON object per event to stdout — nothing writes to a file, because a stateless
+service that owns log files needs volumes, rotation and disk monitoring it should not carry.
+
+- **Every request gets an id**, returned as `x-request-id` and attached to every line emitted while
+  handling it. An inbound `x-request-id` is honoured, so a trace survives a proxy. Without that
+  correlation a 500 in the log cannot be tied to the request that caused it.
+- **Level reflects severity**: 5xx logs at `error`, 4xx at `warn`, everything else at `info`. A 404
+  is the API working as designed, not a fault.
+- **Redaction is configured on the logger**, not at call sites — authorization headers, cookies,
+  passwords, password hashes, tokens, API keys and the Mongo URI are censored wherever they appear.
+  Secrets leak because someone logs an object they have not inspected, so the decision belongs in
+  one place.
+- Health checks and metric scrapes are not logged; they run every few seconds forever and would
+  bury the requests a human cares about.
+- `LOG_LEVEL` overrides the level. Development gets `pino-pretty`; production emits raw JSON,
+  which is what a log aggregator can query.
+
+### Metrics
+
+`GET /metrics` serves the Prometheus text format. It sits outside `/api/v1` because it is an
+operational endpoint, not part of the product API, and it is **not exposed through the public
+Ingress** — metrics reveal traffic shape, error rates and internal route names.
+
+| Metric                                         | Type      | Answers                            |
+| ---------------------------------------------- | --------- | ---------------------------------- |
+| `marketplace_http_request_duration_seconds`    | histogram | Rate, errors and latency per route |
+| `marketplace_http_requests_in_flight`          | gauge     | Concurrency right now              |
+| `marketplace_mongodb_command_duration_seconds` | histogram | Is the API slow, or the database?  |
+| `marketplace_ai_requests_total`                | counter   | Model calls by outcome             |
+| `marketplace_nodejs_eventloop_lag_seconds`     | gauge     | Is the process starved?            |
+| `marketplace_process_resident_memory_bytes`    | gauge     | How close to the container limit   |
+
+Two details that matter more than the list:
+
+- **Routes are labelled by pattern, never by path** — `/api/v1/products/:productId`, not the id.
+  Labelling by raw path would mint a new time series per product and exhaust the scraper. Unmatched
+  paths collapse to a single `unmatched` bucket so a 404 scan cannot do the same thing.
+- **MongoDB commands are timed per collection**, which is what separates "the API is slow" from
+  "the database is slow" — otherwise that is guesswork.
+
+### Not collected here
+
+Prometheus, Grafana, Loki and Alertmanager are **not** part of this repository — the application
+exposes the signals, and collecting them is a cluster concern. `k8s/` contains no `ServiceMonitor`
+yet, so nothing scrapes `/metrics` in a deployed cluster. Error tracking (Sentry) is also not wired.
+Both are the next infrastructure step, not something the code is waiting on.
 
 ---
 

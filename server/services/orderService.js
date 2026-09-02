@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { logger } from '../utils/logger.js'
 import { Cart } from '../models/Cart.js'
 import { Inventory } from '../models/Inventory.js'
 import { InventoryHistory } from '../models/InventoryHistory.js'
@@ -439,10 +440,9 @@ export async function updateSellerOrderStatus(userId, sellerOrderId, status) {
     try {
       await notifyOrderStatus(rollup.customerId, sellerOrder.orderId, parentStatus)
     } catch (error) {
-      console.error(
-        '[notifications] order status failed',
-        String(sellerOrder.orderId),
-        error.message,
+      logger.error(
+        { err: error, orderId: String(sellerOrder.orderId), status: parentStatus },
+        'order status notification failed',
       )
     }
   }

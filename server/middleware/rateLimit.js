@@ -83,8 +83,10 @@ export function rateLimit({ max = 60, windowMs = 60_000, message = 'Too many req
 export function globalRateLimit({ max = 600, windowMs = 60_000 } = {}) {
   return function globalLimiter(request, response, next) {
     // Health checks are how the orchestrator decides whether to keep this pod in
-    // rotation; throttling them would turn a traffic spike into an outage.
-    if (request.path.startsWith('/api/health')) return next()
+    // rotation; throttling them would turn a traffic spike into an outage. The
+    // metrics scrape is exempt for the same reason — losing visibility exactly
+    // when traffic spikes is the worst possible moment to go blind.
+    if (request.path.startsWith('/api/health') || request.path === '/metrics') return next()
 
     const { allowed, retryAfterSeconds } = consumeBucket(`global:${request.ip}`, max, windowMs)
     if (!allowed)

@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connectDatabase, disconnectDatabase } from './config/database.js'
+import { logger } from './utils/logger.js'
 
 const serverDirectory = dirname(fileURLToPath(import.meta.url))
 // `override` so server/.env is authoritative in local development: a stale
@@ -34,10 +35,10 @@ async function cleanupExpiredReservations() {
   try {
     const summary = await releaseExpiredReservations()
     if (summary.released > 0) {
-      console.log(`Released ${summary.released} expired inventory reservation(s)`)
+      logger.info({ released: summary.released }, 'released expired inventory reservations')
     }
   } catch (error) {
-    console.error('Expired reservation cleanup failed:', error.message)
+    logger.error({ err: error }, 'expired reservation cleanup failed')
   } finally {
     reservationCleanupRunning = false
   }
@@ -49,12 +50,13 @@ async function reconcileRefunds() {
   try {
     const summary = await reconcilePendingRefunds()
     if (summary.submitted || summary.settled || summary.failed) {
-      console.log(
-        `Refund reconciliation: submitted ${summary.submitted}, settled ${summary.settled}, failed ${summary.failed}`,
+      logger.info(
+        { submitted: summary.submitted, settled: summary.settled, failed: summary.failed },
+        'refund reconciliation',
       )
     }
   } catch (error) {
-    console.error('Refund reconciliation failed:', error.message)
+    logger.error({ err: error }, 'refund reconciliation failed')
   } finally {
     refundReconcileRunning = false
   }
@@ -69,17 +71,17 @@ async function startServer() {
     refundReconcileTimer = setInterval(reconcileRefunds, refundReconcileIntervalMs)
     refundReconcileTimer.unref?.()
     httpServer = app.listen(port, () => {
-      console.log(`Marketplace API listening on http://localhost:${port}`)
+      logger.info({ port }, 'marketplace API listening')
     })
   } catch (error) {
-    console.error('Unable to start the marketplace API:', error.message)
+    logger.fatal({ err: error }, 'unable to start the marketplace API')
     await disconnectDatabase()
     process.exitCode = 1
   }
 }
 
 async function shutdown(signal) {
-  console.log(`${signal} received, shutting down`)
+  logger.info({ signal }, 'shutting down')
 
   if (reservationCleanupTimer) clearInterval(reservationCleanupTimer)
   if (refundReconcileTimer) clearInterval(refundReconcileTimer)
@@ -95,14 +97,14 @@ async function shutdown(signal) {
 
 process.once('SIGINT', () => {
   shutdown('SIGINT').catch((error) => {
-    console.error('Graceful shutdown failed:', error.message)
+    logger.error({ err: error }, 'graceful shutdown failed')
     process.exitCode = 1
   })
 })
 
 process.once('SIGTERM', () => {
   shutdown('SIGTERM').catch((error) => {
-    console.error('Graceful shutdown failed:', error.message)
+    logger.error({ err: error }, 'graceful shutdown failed')
     process.exitCode = 1
   })
 })

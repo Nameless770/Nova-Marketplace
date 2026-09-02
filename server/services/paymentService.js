@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { logger } from '../utils/logger.js'
 import Stripe from 'stripe'
 import { Inventory } from '../models/Inventory.js'
 import { InventoryHistory } from '../models/InventoryHistory.js'
@@ -137,7 +138,7 @@ async function announceOrderConfirmed(orderId, customerId) {
       }),
     )
   } catch (error) {
-    console.error('[notifications] order confirmation failed', String(orderId), error.message)
+    logger.error({ err: error, orderId: String(orderId) }, 'order confirmation notification failed')
   }
 }
 

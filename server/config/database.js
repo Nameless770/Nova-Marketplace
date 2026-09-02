@@ -1,5 +1,7 @@
 import dns from 'node:dns'
 import mongoose from 'mongoose'
+import { instrumentMongo } from '../middleware/metrics.js'
+import { logger } from '../utils/logger.js'
 
 export async function connectDatabase() {
   const mongoUri = process.env.MONGODB_URI
@@ -16,16 +18,19 @@ export async function connectDatabase() {
   if (dnsServers?.length) dns.setServers(dnsServers)
 
   mongoose.connection.on('error', (error) => {
-    console.error('MongoDB connection error:', error.message)
+    logger.error({ err: error }, 'MongoDB connection error')
   })
 
-  await mongoose.connect(mongoUri)
-  console.log('MongoDB connected')
+  // `monitorCommands` is what emits the events the metrics layer times. It costs
+  // an event per command, which is negligible next to the round trip itself.
+  await mongoose.connect(mongoUri, { monitorCommands: true })
+  instrumentMongo(mongoose.connection.getClient())
+  logger.info('MongoDB connected')
 }
 
 export async function disconnectDatabase() {
   if (mongoose.connection.readyState !== 0) {
     await mongoose.disconnect()
-    console.log('MongoDB disconnected')
+    logger.info('MongoDB disconnected')
   }
 }
