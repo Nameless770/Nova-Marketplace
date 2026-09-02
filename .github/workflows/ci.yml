@@ -214,18 +214,34 @@ jobs:
     name: Compose smoke test
     runs-on: ubuntu-latest
     needs: [lint, test]
+    # Job-level, not step-level: `docker compose` interpolates the compose file
+    # on *every* invocation, so `logs` and `down` need JWT_SECRET just as much as
+    # `up` does. Scoping it to the start step would leave teardown failing.
+    #
+    # The compose file declares JWT_SECRET as `${JWT_SECRET:?...}` — required,
+    # no default — so without this the stack never starts. It must also survive
+    # the app's production strength check: at least 32 characters, 12 distinct,
+    # and not beginning with a placeholder word like "test" or "secret".
+    env:
+      JWT_SECRET: ci-smoke-2f9Kq7xLm4Rw8vTz-not-used-for-signing-anything
+      PUBLIC_PORT: '8080'
     steps:
       - uses: actions/checkout@v4
 
       - name: Build and start the stack
         run: docker compose up --build --detach --wait --wait-timeout 240
 
+      # Through nginx on 8080, NOT the API's own 5000: compose deliberately gives
+      # the backend `expose` rather than `ports`, so it is unreachable from the
+      # runner. Going through the proxy is also the more honest test — it is the
+      # path a real client takes.
+      #
       # Readiness, not liveness: this is the probe that reports whether the API
       # can actually reach its database, which is what "deployed" has to mean.
       - name: Wait for the API to report ready
         run: |
           for attempt in $(seq 1 30); do
-            if curl -fsS http://localhost:5000/api/health/ready | grep -q '"status":"ready"'; then
+            if curl -fsS http://localhost:8080/api/health/ready | grep -q '"status":"ready"'; then
               echo "API ready after ${attempt} attempt(s)"
               exit 0
             fi
@@ -236,8 +252,13 @@ jobs:
 
       - name: Serve a real request through the stack
         run: |
-          curl -fsS "http://localhost:5000/api/v1/categories" -o /dev/null
-          echo "categories endpoint served"
+          curl -fsS "http://localhost:8080/api/v1/categories" -o /dev/null
+          echo "categories endpoint served through nginx"
+
+      - name: Confirm the frontend is served
+        run: |
+          curl -fsS "http://localhost:8080/" -o /dev/null
+          echo "frontend served"
 
       # The logs are the only way to diagnose a failure here after the fact.
       - name: Dump container logs on failure
