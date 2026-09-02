@@ -201,11 +201,30 @@ jobs:
         working-directory: server
         run: npm ci --omit=dev
 
-      - name: Smoke check that the app boots without dev dependencies
+      # Booted the way production actually boots. Previously this step left
+      # NODE_ENV unset, so it verified a *development* boot against a production
+      # install — which is how a dev-only logging transport got imported from a
+      # tree that does not contain it.
+      #
+      # CLIENT_ORIGIN is required alongside NODE_ENV=production: the app refuses
+      # to start without it rather than failing open to a localhost CORS origin.
+      - name: Smoke check that the app boots in production mode
+        working-directory: server
+        env:
+          NODE_ENV: production
+          CLIENT_ORIGIN: http://localhost:8080
+          JWT_SECRET: ci-smoke-check-secret-not-used-for-signing-anything
+        run: node --input-type=module -e "await import('./app.js'); console.log('production boot ok')"
+
+      # The complement, and a regression test for a real defect: with NODE_ENV
+      # unset the logger prefers `pino-pretty`, which a production install does
+      # not contain. Logging must degrade to JSON rather than stop the process
+      # from starting, so this boots the same tree with no NODE_ENV at all.
+      - name: Smoke check that the app boots with NODE_ENV unset
         working-directory: server
         env:
           JWT_SECRET: ci-smoke-check-secret-not-used-for-signing-anything
-        run: node --input-type=module -e "await import('./app.js'); console.log('app module loaded')"
+        run: node --input-type=module -e "await import('./app.js'); console.log('default boot ok')"
 
   # Proves the deployment path rather than asserting it. Building an image says
   # nothing about whether the composed stack actually serves traffic — this
