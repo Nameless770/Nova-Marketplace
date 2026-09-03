@@ -6,6 +6,7 @@ import { ProtectedRoute } from './layouts/ProtectedRoute.jsx'
 import { LoadingState } from './components/LoadingState.jsx'
 import { CategoriesPage } from './pages/CategoriesPage.jsx'
 import { HomePage } from './pages/HomePage.jsx'
+import { AuthCallbackPage } from './pages/AuthCallbackPage.jsx'
 import { LoginPage } from './pages/LoginPage.jsx'
 import { NotFoundPage } from './pages/NotFoundPage.jsx'
 import { ProductsPage } from './pages/ProductsPage.jsx'
@@ -123,6 +124,9 @@ function App() {
           <Route path="products/:productId" element={<ProductDetailsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="login" element={<LoginPage />} />
+          {/* Where Google returns the browser after consent. Public: the visitor
+              is by definition not signed in yet when they arrive here. */}
+          <Route path="auth/callback" element={<AuthCallbackPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route element={<CustomerRoute />}>
             <Route path="assistant" element={<AssistantPage />} />

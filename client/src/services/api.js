@@ -36,11 +36,24 @@ api.interceptors.response.use(
   },
 )
 
+/**
+ * The API's absolute base, for links the *browser* must follow rather than axios.
+ *
+ * OAuth is a full-page redirect, so it needs a real href. When VITE_API_URL is a
+ * relative path (the production setup, where nginx proxies /api) it is resolved
+ * against the current origin, which is what makes the link work in both.
+ */
+export function apiOrigin() {
+  const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'
+  return new URL(base, window.location.origin).toString().replace(/\/$/, '')
+}
+
 export const authApi = {
   getCurrentUser: () => api.get('/auth/me'),
   login: (credentials) => api.post('/auth/login', credentials),
   register: (details) => api.post('/auth/register', details),
   logout: () => api.post('/auth/logout'),
+  googleEnabled: () => api.get('/auth/google/enabled'),
 }
 
 export const catalogApi = {
@@ -184,4 +197,5 @@ export const reviewApi = {
 
 export const qaApi = {
   list: (productId, params) => api.get(`/qa/products/${productId}/questions`, { params }),
+  ask: (productId, text) => api.post(`/qa/products/${productId}/questions`, { text }),
 }

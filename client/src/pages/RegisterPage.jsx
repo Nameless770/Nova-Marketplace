@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
+import { GoogleSignInButton } from '../components/GoogleSignInButton.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { useAuth } from '../context/useAuth.js'
 
@@ -79,6 +80,7 @@ export function RegisterPage() {
           Create account
         </button>
       </form>
+      <GoogleSignInButton label="Sign up with Google" />
       <p className="auth-alternate">
         Already have an account? <Link to="/login">Sign in</Link>
       </p>

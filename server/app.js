@@ -23,6 +23,7 @@ import pinoHttp from 'pino-http'
 import { metricsHandler, metricsMiddleware } from './middleware/metrics.js'
 import { globalRateLimit } from './middleware/rateLimit.js'
 import { logger, requestLogger } from './utils/logger.js'
+import { loggableUrl } from './utils/url.js'
 import { stripeWebhook } from './controllers/paymentController.js'
 import { asyncHandler } from './utils/errors.js'
 import userRoutes from './routes/userRoutes.js'
@@ -65,7 +66,9 @@ app.use(
       req: (request) => ({
         id: request.id,
         method: request.method,
-        url: request.url,
+        // Values of credential-carrying parameters are stripped: the OAuth
+        // callback arrives with a live authorization code in its query string.
+        url: loggableUrl(request.url),
         userAgent: request.headers?.['user-agent'],
       }),
       res: (response) => ({ statusCode: response.statusCode }),

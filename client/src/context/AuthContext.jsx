@@ -65,6 +65,17 @@ export function AuthProvider({ children }) {
     return authenticate(authApi.login, credentials)
   }
 
+  /**
+   * Takes a session that was minted elsewhere — the Google callback hands one
+   * back in the URL fragment. Storing the token is enough: the effect keyed on
+   * `token` loads the profile, so this needs no request of its own.
+   */
+  function adoptToken(accessToken) {
+    setError(null)
+    setStatus('loading')
+    setToken(accessToken)
+  }
+
   async function register(details) {
     return authenticate(authApi.register, details)
   }
@@ -108,7 +119,9 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, status, error, login, register, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, status, error, login, register, logout, adoptToken }}
+    >
       {children}
     </AuthContext.Provider>
   )

@@ -3,7 +3,20 @@ import mongoose from 'mongoose'
 const userSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, lowercase: true, trim: true, unique: true },
-    passwordHash: { type: String, required: true, select: false },
+    // Required only for accounts that sign in with a password. An account
+    // created through Google has no password at all, and inventing a random one
+    // would be worse than storing none: it looks like a credential, and any code
+    // that assumes a hash exists would silently accept it.
+    passwordHash: {
+      type: String,
+      required: function passwordRequired() {
+        return !this.googleId
+      },
+      select: false,
+    },
+    // `sparse` matters: without it every password account would share a `null`
+    // googleId and the unique index would reject the second one.
+    googleId: { type: String, index: { unique: true, sparse: true }, select: false },
     firstName: { type: String, required: true, trim: true, maxlength: 80 },
     lastName: { type: String, required: true, trim: true, maxlength: 80 },
     phone: { type: String, trim: true, maxlength: 32 },

@@ -27,3 +27,37 @@ export function isSafeImageUrl(value) {
 }
 
 export const IMAGE_URL_MESSAGE = 'must be an absolute https:// URL of at most 2048 characters'
+
+/**
+ * A request URL safe to write to a log.
+ *
+ * The request logger records `req.url` for every request, and OAuth redirects
+ * arrive as `/api/v1/auth/google/callback?code=...&state=...`. An authorization
+ * code is a live credential — short-lived and single-use, but still enough to
+ * mint a session — so logging it verbatim would put a working credential in the
+ * log aggregator. The path and the parameter *names* stay, because those are
+ * what makes a log searchable; only the values of sensitive keys are replaced.
+ */
+const SENSITIVE_PARAMS = new Set([
+  'code',
+  'state',
+  'token',
+  'access_token',
+  'id_token',
+  'refresh_token',
+  'client_secret',
+  'password',
+])
+
+export function loggableUrl(value) {
+  if (typeof value !== 'string') return value
+  const split = value.indexOf('?')
+  if (split === -1) return value
+  const path = value.slice(0, split)
+  const params = new URLSearchParams(value.slice(split + 1))
+  for (const key of params.keys()) {
+    if (SENSITIVE_PARAMS.has(key.toLowerCase())) params.set(key, '[redacted]')
+  }
+  const query = params.toString()
+  return query ? `${path}?${decodeURIComponent(query)}` : path
+}

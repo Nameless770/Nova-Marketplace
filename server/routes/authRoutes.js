@@ -1,5 +1,13 @@
 import { Router } from 'express'
-import { currentUser, login, logout, register } from '../controllers/authController.js'
+import {
+  currentUser,
+  googleCallback,
+  googleEnabled,
+  googleStart,
+  login,
+  logout,
+  register,
+} from '../controllers/authController.js'
 import { authenticate } from '../middleware/auth.js'
 import { credentialGuard, rateLimit } from '../middleware/rateLimit.js'
 import { validateAuthBody } from '../middleware/validate.js'
@@ -16,6 +24,18 @@ router.post(
   asyncHandler(register),
 )
 router.post('/login', credentialGuard(), validateAuthBody, asyncHandler(login))
+
+// Google sign-in. Both are browser redirects rather than API calls, so they
+// return a 302 rather than JSON and carry no Authorization header.
+// `/google` is throttled for the same reason `/register` is: it is unauthenticated
+// and each hit starts a round trip to a third party.
+router.get('/google/enabled', googleEnabled)
+router.get(
+  '/google',
+  rateLimit({ max: 20, windowMs: 15 * 60_000, message: 'Too many sign-in attempts' }),
+  googleStart,
+)
+router.get('/google/callback', asyncHandler(googleCallback))
 router.post('/logout', authenticate, asyncHandler(logout))
 router.get('/me', authenticate, asyncHandler(currentUser))
 

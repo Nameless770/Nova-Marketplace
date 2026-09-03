@@ -304,7 +304,8 @@ h2 {
 }
 .search-tools {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  /* query · price range · sort · submit */
+  grid-template-columns: 1fr minmax(170px, auto) auto auto;
   gap: 0.75rem;
   margin-bottom: 1.5rem;
 }
@@ -2363,4 +2364,159 @@ a:focus-visible {
   border-left: 2px solid var(--hairline);
   color: var(--muted);
   font-size: 14px;
+}
+
+/* ---- Google sign-in ---- */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.1rem 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+/* Google's brand guidelines ask for their own colours on a neutral surface, so
+   this deliberately sits outside the coral palette rather than being restyled. */
+.google-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #1f1f1f;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.google-button:hover {
+  background: #f6f6f6;
+}
+.auth-error {
+  color: var(--error);
+  margin-bottom: 1rem;
+}
+
+/* ---- price range filter ---- */
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.price-range input {
+  width: 100%;
+  min-width: 0;
+}
+.price-range span {
+  color: var(--muted);
+}
+.filter-warning {
+  margin: 0.5rem 0 0;
+  color: var(--error);
+  font-size: 13px;
+}
+/* The chip's clear control is a button now rather than a link: clearing one
+   filter has to preserve the others, which a fixed href cannot express. */
+.filter-chip button {
+  border: 0;
+  background: none;
+  padding: 0 0 0 0.4rem;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* ---- product questions & answers ---- */
+.qa-section {
+  margin-top: var(--s-xl);
+  padding-top: var(--s-lg);
+  border-top: 1px solid var(--hairline);
+}
+.qa-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+.qa-item {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+.qa-question,
+.qa-answer {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0 0 0.4rem;
+  line-height: 1.5;
+}
+.qa-question {
+  color: var(--ink);
+  font-weight: 500;
+}
+.qa-answer {
+  color: var(--body);
+}
+/* A small lead-in letter rather than an icon: it names the role of the line
+   without needing a legend, and reads the same at any zoom. */
+.qa-marker {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-card);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.qa-marker.is-answer {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+.qa-pending,
+.qa-empty,
+.qa-thanks {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.qa-pending {
+  padding-left: 26px;
+}
+.qa-thanks {
+  margin-top: 1rem;
+}
+.qa-form {
+  margin-top: 1rem;
+}
+.qa-form textarea {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+.qa-form .add-to-cart {
+  width: auto;
+  margin-top: 0.6rem;
+  padding-inline: 1.2rem;
+}
+.qa-error {
+  margin: 0.5rem 0 0;
+  color: var(--error);
+  font-size: 13px;
 }

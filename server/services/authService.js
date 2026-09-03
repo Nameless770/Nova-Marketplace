@@ -30,7 +30,11 @@ export async function registerUser({ email, password, firstName, lastName }) {
 
 export async function loginUser({ email, password }) {
   const user = await User.findOne({ email: email.trim().toLowerCase() }).select('+passwordHash')
-  const validPassword = user && (await bcrypt.compare(password, user.passwordHash))
+  // An account created through Google has no password hash. `bcrypt.compare`
+  // rejects an undefined hash by throwing, which would surface as a 500 and, more
+  // importantly, leak that the address exists. Treating it as a failed login
+  // keeps the response identical to an unknown email.
+  const validPassword = user?.passwordHash && (await bcrypt.compare(password, user.passwordHash))
   if (!validPassword || user.status !== 'active')
     throw new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password')
 

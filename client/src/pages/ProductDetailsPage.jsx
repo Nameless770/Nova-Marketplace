@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
 import { ProductImage } from '../components/ProductImage.jsx'
+import { ProductQuestions } from '../components/ProductQuestions.jsx'
 import { ProductReviews } from '../components/ProductReviews.jsx'
 import { RecommendationShelf } from '../components/RecommendationShelf.jsx'
 import { useAuth } from '../context/useAuth.js'
@@ -196,6 +197,7 @@ export function ProductDetailsPage() {
         )}
         {actionError && <ErrorState message={actionError} />}
         <ProductReviews productId={product._id} />
+        <ProductQuestions productId={product._id} />
       </div>
       <SimilarProducts productId={product._id} />
     </section>
