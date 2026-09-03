@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { Suspense, lazy, useCallback, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ErrorState } from '../components/ErrorState.jsx'
 import { LoadingState } from '../components/LoadingState.jsx'
@@ -14,12 +14,17 @@ import { formatMoney, variantLabel } from '../utils/format.js'
 
 const sameId = (a, b) => String(a) === String(b)
 
+// three.js is ~170 kB and only this route uses it, so it is fetched when a
+// shopper actually asks for the 3D view rather than shipped to every page.
+const Product3DViewer = lazy(() => import('../components/Product3DViewer.jsx'))
+
 export function ProductDetailsPage() {
   const { productId } = useParams()
   const [selectedVariant, setSelectedVariant] = useState('')
   const [actionError, setActionError] = useState(null)
   const [actionPending, setActionPending] = useState(false)
   const [stepperOpen, setStepperOpen] = useState(false)
+  const [view, setView] = useState('flat')
   const { user } = useAuth()
   const { items: cartItems, addToCart, setQuantity } = useCart()
   const { items: wishItems, add: addWish, remove: removeWish } = useWishlist()
@@ -74,11 +79,36 @@ export function ProductDetailsPage() {
   return (
     <section className="detail-layout">
       <div className="detail-image">
-        <ProductImage
-          url={product.images?.[0]?.url}
-          alt={product.images?.[0]?.alt}
-          label={product.title}
-        />
+        {view === '3d' ? (
+          <Suspense fallback={<div className="viewer-3d-stage is-loading">Preparing model…</div>}>
+            <Product3DViewer title={product.title} seed={product._id} className="viewer-3d" />
+          </Suspense>
+        ) : (
+          <ProductImage
+            url={product.images?.[0]?.url}
+            alt={product.images?.[0]?.alt}
+            label={product.title}
+            seed={product._id}
+          />
+        )}
+        <div className="view-switch" role="group" aria-label="Product view">
+          <button
+            type="button"
+            className={view === 'flat' ? 'is-active' : ''}
+            onClick={() => setView('flat')}
+            aria-pressed={view === 'flat'}
+          >
+            Image
+          </button>
+          <button
+            type="button"
+            className={view === '3d' ? 'is-active' : ''}
+            onClick={() => setView('3d')}
+            aria-pressed={view === '3d'}
+          >
+            3D model
+          </button>
+        </div>
       </div>
       <div className="detail-copy">
         <p className="eyebrow">{product.brand || 'Independent label'}</p>

@@ -1,6 +1,7 @@
 import {
   createReview,
   deleteReview,
+  listMyReviews,
   listProductReviews,
   listReviewsForModeration,
   moderateReview,
@@ -12,6 +13,10 @@ export async function productReviews(request, response) {
     success: true,
     data: await listProductReviews(request.params.productId, request.query),
   })
+}
+
+export async function myReviews(request, response) {
+  response.json({ success: true, data: await listMyReviews(request.user._id, request.query) })
 }
 
 export async function createCustomerReview(request, response) {

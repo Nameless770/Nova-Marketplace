@@ -1,57 +1,86 @@
-// Real product photos per category, so a headphone product shows headphones and
-// a lamp shows a lamp. Each ID is an Unsplash photo verified to load and to
-// depict the right product type. picsum.photos (the old source) both hangs in
-// some networks and shows unrelated random images, so it was replaced.
-//
-// images.unsplash.com serves a resized/cropped JPEG straight from the photo ID
-// with no API key. Pools have a few options each so products in one category
-// are not all identical.
-const POOLS = {
-  audio: ['1505740420928-5e560c06d30e', '1546435770-a3e426bf472b', '1583394838336-acd977736f90'],
-  lighting: [
-    '1513506003901-1e6a229e2d15',
-    '1517991104123-1d56a6e81ed9',
-    '1524484485831-a92ffc0de03f',
-  ],
-  workspace: [
-    '1497215728101-856f4ea42174',
-    '1593642702821-c8da6771f0c6',
-    '1587829741301-dc798b83add3',
-  ],
-  home: ['1586023492125-27b2c045efd7', '1555041469-a586c61ea9bc', '1567016432779-094069958ea5'],
-  kitchen: ['1544787219-7f47ccb76574', '1585515320310-259814833e62', '1517668808822-9ebb02f2a0e6'],
-  outdoor: ['1551632811-561732d1e306', '1622260614153-03223fb72052'],
-  fitness: [
-    '1571019613454-1cb2f99b2d8b',
-    '1518611012118-696072aa579a',
-    '1517836357463-d25dfeac3438',
-  ],
-  stationery: ['1517842645767-c639042777db', '1531346878377-a5be20888e57'],
-  bags: ['1553062407-98eeb64c6a62', '1548036328-c9fa89d128fa', '1591561954557-26941169b49e'],
-  accessories: [
-    '1524592094714-0f0654e20314',
-    '1523275335684-37898b6baf30',
-    '1511499767150-a48a237f0083',
-  ],
+import { createRequire } from 'node:module'
+import { CATEGORY_TERMS, poolKeyFor } from './productImageTerms.js'
+
+/**
+ * Picks each product's photo from the pool built by fetch-product-images.js.
+ *
+ * The pool is keyed by what the product *is* — "chef knife", "kettle" — rather
+ * than by its category. The old category-keyed version held 28 photos for 320
+ * products: one photo landed on seventeen of them, a row of six kitchen items
+ * could only show three pictures, and a knife could be illustrated by a bowl.
+ *
+ * Assignment is by position, not by hash. Hashing spreads products across a pool
+ * but collides, so two products of the same kind could still land on the same
+ * photo while another went unused. Sorting a kind's products and walking the
+ * pool in step guarantees no repeat until the pool is exhausted.
+ */
+const require = createRequire(import.meta.url)
+
+let pool = {}
+try {
+  pool = require('./productImagePool.json')
+} catch {
+  // No pool yet — fetch-product-images.js has not been run. Callers fall back
+  // to the generated artwork in the client, which is why this is not fatal.
 }
 
-// Any category without its own pool falls back to a neutral product photo.
-const FALLBACK = ['1553062407-98eeb64c6a62']
+export const hasPool = Object.keys(pool).some((key) => key !== '__provider')
 
-function unsplashUrl(id) {
-  return `https://images.unsplash.com/photo-${id}?w=800&h=800&fit=crop&q=70&auto=format`
+function photosFor(title, categorySlug) {
+  const key = poolKeyFor(title, categorySlug)
+  const direct = pool[key]
+  if (direct?.length) return direct
+  // A title naming nothing we search for falls back to its category's photos.
+  for (const [needle, urls] of Object.entries(pool)) {
+    if (needle === `category:${categorySlug}` && urls?.length) return urls
+  }
+  return []
 }
 
-// Deterministic index from a string, so a given product always maps to the same
-// photo (stable across re-seeds) while spreading a category across its pool.
-function pickIndex(key, length) {
+/**
+ * Assigns every product a photo, spreading each kind across its pool.
+ *
+ * @param products  [{ _id, title, categorySlug }]
+ * @returns Map of product id -> image url (absent when the pool has nothing)
+ */
+export function assignImages(products) {
+  const groups = new Map()
+  for (const product of products) {
+    const key = poolKeyFor(product.title, product.categorySlug)
+    if (!groups.has(key)) groups.set(key, [])
+    groups.get(key).push(product)
+  }
+
+  const assigned = new Map()
+  for (const [, members] of groups) {
+    // Stable order, so re-running produces the same assignment and a product
+    // keeps its photo across re-seeds.
+    members.sort((a, b) => String(a._id).localeCompare(String(b._id)))
+    const urls = photosFor(members[0].title, members[0].categorySlug)
+    if (!urls.length) continue
+    members.forEach((product, index) => {
+      assigned.set(String(product._id), urls[index % urls.length])
+    })
+  }
+  return assigned
+}
+
+/** Single-product lookup, for seeding one row at a time. */
+export function imageForProduct(title, categorySlug, key = '') {
+  const urls = photosFor(title, categorySlug)
+  if (!urls.length) return ''
   let value = 0
-  for (let i = 0; i < key.length; i += 1) value = (value * 31 + key.charCodeAt(i)) | 0
-  return Math.abs(value) % length
+  const text = String(key)
+  for (let index = 0; index < text.length; index += 1) {
+    value = (value * 31 + text.charCodeAt(index)) | 0
+  }
+  value ^= value >>> 16
+  value = Math.imul(value, 0x85ebca6b)
+  value ^= value >>> 16
+  return urls[Math.abs(value) % urls.length]
 }
 
-// `key` is anything stable per product (its slug works well).
+/** Category-only lookup, kept for callers that do not know the product title. */
 export function imageForCategory(categorySlug, key = '') {
-  const pool = POOLS[categorySlug] || FALLBACK
-  return unsplashUrl(pool[pickIndex(String(key), pool.length)])
+  return imageForProduct(CATEGORY_TERMS[categorySlug] ?? '', categorySlug, key)
 }

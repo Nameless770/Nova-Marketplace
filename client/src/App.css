@@ -654,6 +654,67 @@ h2 {
   color: var(--muted);
   display: grid;
   place-items: center;
+  /* The view switch sits over the media, so both children share one cell. */
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---- generated 3D product viewer ---- */
+.viewer-3d,
+.viewer-3d-stage {
+  width: 100%;
+  height: 100%;
+}
+.viewer-3d {
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+.viewer-3d-stage {
+  /* The canvas is sized from this element, so it needs real dimensions before
+     three.js measures it — a zero-height mount renders nothing. */
+  min-height: 260px;
+  cursor: grab;
+}
+.viewer-3d-stage:active {
+  cursor: grabbing;
+}
+.viewer-3d-stage.is-loading {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+.viewer-3d-hint {
+  margin: 0;
+  padding-bottom: 0.9rem;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+.view-switch {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgb(250 249 245 / 88%);
+  border: 1px solid var(--hairline);
+}
+.view-switch button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.34rem 0.8rem;
+  font-size: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.view-switch button.is-active {
+  background: var(--ink);
+  color: var(--canvas);
 }
 .detail-copy h2 {
   margin-bottom: 1.5rem;
@@ -700,6 +761,124 @@ h2 {
   border: 1px solid var(--line);
   background: var(--panel);
 }
+/* ---- reviewing a delivered order ---- */
+/* A line that carries a review form stacks: product row, then the form. */
+.order-line {
+  flex-direction: column;
+  align-items: stretch;
+}
+.line-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.review-prompt {
+  margin: 1.25rem 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.review-form,
+.review-done {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--hairline);
+}
+.review-done {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.review-done-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+.review-stars-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.review-stars-field legend {
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 0;
+  margin-bottom: 0.3rem;
+}
+.review-stars {
+  display: flex;
+  gap: 2px;
+}
+.review-stars button,
+.review-stars.is-static span {
+  border: 0;
+  background: transparent;
+  padding: 0 2px;
+  font-size: 24px;
+  line-height: 1;
+  /* Unset stars stay visible but recede, so the control reads as five stars
+     rather than as however many are currently chosen. */
+  color: var(--hairline);
+  cursor: pointer;
+}
+.review-stars.is-static span {
+  cursor: default;
+  font-size: 18px;
+}
+.review-stars button.is-on,
+.review-stars.is-static span.is-on {
+  color: var(--primary);
+}
+.review-text textarea {
+  width: 100%;
+  margin-top: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+  color: var(--ink);
+  font: inherit;
+  resize: vertical;
+}
+.review-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+}
+.review-actions .add-to-cart {
+  width: auto;
+  padding-inline: 1.2rem;
+}
+.review-error {
+  margin: 0.5rem 0 0;
+  color: var(--error);
+  font-size: 13px;
+}
+.link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+/* Visible to screen readers only — the textarea's label. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .line-item-image {
   display: grid;
   flex: 0 0 72px;
@@ -1022,6 +1201,21 @@ h2 {
   background: var(--canvas);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
 }
+/* The journey's end. It keeps the halo, because this is still where the order
+   is, but the marker is filled and ticked like any completed step — a hollow
+   ring on the final stage reads as "not done yet". */
+.tracker-step.is-arrived::before {
+  background: var(--primary);
+}
+.tracker-step.is-arrived .tracker-marker {
+  border-color: var(--primary);
+  background: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.tracker-step.is-arrived .tracker-label {
+  color: var(--ink);
+  font-weight: 600;
+}
 .tracker-label {
   font-size: 13px;
   font-weight: 600;
@@ -1095,6 +1289,13 @@ h2 {
   }
   .tracker-step.is-current::before {
     height: 50%;
+  }
+  /* Each step draws its rail downward, to the step after it — so the last one
+     has nothing to connect to. Left at full height it trailed past the final
+     marker, which reads as another step still to come. Stopping at the marker's
+     centre tucks it behind the marker and ends the line there. */
+  .tracker-step:last-child::before {
+    height: 12px;
   }
   .tracker-marker {
     left: 0;

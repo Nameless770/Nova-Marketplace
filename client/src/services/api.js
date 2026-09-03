@@ -176,6 +176,10 @@ export const profileApi = {
 
 export const reviewApi = {
   list: (productId, params) => api.get(`/reviews/products/${productId}`, { params }),
+  // Comma-separated ids, so one request covers every line on an order.
+  mine: (productIds) => api.get('/reviews/mine', { params: { productIds } }),
+  create: (productId, body) => api.post(`/reviews/products/${productId}`, body),
+  update: (reviewId, body) => api.patch(`/reviews/${reviewId}`, body),
 }
 
 export const qaApi = {

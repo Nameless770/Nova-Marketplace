@@ -374,3 +374,123 @@ describe('the same journey attempted from the wrong account', () => {
     expect(listed.body.data.items[0].status).toBe('confirmed')
   })
 })
+
+describe('reviewing what was delivered', () => {
+  /** Walks an order all the way to delivered, which is when reviewing opens. */
+  async function deliveredOrder() {
+    const placed = await placePaidOrder()
+    const sellerOrderId = await sellerOrderIdFor(placed.catalogue.owner)
+    for (const status of ['processing', 'shipped', 'out_for_delivery', 'delivered']) {
+      await request(app)
+        .patch(`/api/v1/orders/seller/${sellerOrderId}/status`)
+        .set('Authorization', authHeader(placed.catalogue.owner))
+        .send({ status })
+        .expect(200)
+    }
+    return placed
+  }
+
+  it('lets the buyer rate and comment on a delivered product', async () => {
+    const { catalogue, customer } = await deliveredOrder()
+
+    const created = await request(app)
+      .post(`/api/v1/reviews/products/${catalogue.product._id}`)
+      .set('Authorization', customer.token)
+      .send({ rating: 4, text: 'Arrived quickly and feels well made.' })
+      .expect(201)
+
+    expect(created.body.data.review).toMatchObject({
+      rating: 4,
+      // The buyer is known to have bought it, so the badge is earned rather
+      // than self-declared.
+      verifiedPurchase: true,
+      status: 'pending',
+    })
+  })
+
+  it('shows the buyer their own review before a moderator has published it', async () => {
+    const { catalogue, customer } = await deliveredOrder()
+    await request(app)
+      .post(`/api/v1/reviews/products/${catalogue.product._id}`)
+      .set('Authorization', customer.token)
+      .send({ rating: 5, text: 'Exactly what I wanted.' })
+      .expect(201)
+
+    // The public list is published-only, so a pending review is invisible there.
+    const publicList = await request(app)
+      .get(`/api/v1/reviews/products/${catalogue.product._id}`)
+      .expect(200)
+    expect(publicList.body.data.items).toHaveLength(0)
+
+    // Without /mine the orders page could not tell the buyer they had already
+    // reviewed, and would offer a form the API then rejects as a duplicate.
+    const mine = await request(app)
+      .get('/api/v1/reviews/mine')
+      .query({ productIds: String(catalogue.product._id) })
+      .set('Authorization', customer.token)
+      .expect(200)
+    expect(mine.body.data.items).toHaveLength(1)
+    expect(mine.body.data.items[0]).toMatchObject({ rating: 5, status: 'pending' })
+  })
+
+  it('refuses a second review of the same product', async () => {
+    const { catalogue, customer } = await deliveredOrder()
+    const send = () =>
+      request(app)
+        .post(`/api/v1/reviews/products/${catalogue.product._id}`)
+        .set('Authorization', customer.token)
+        .send({ rating: 3, text: 'A considered opinion.' })
+
+    await send().expect(201)
+    const second = await send()
+    expect(second.status).toBe(409)
+    expect(second.body.error.code).toBe('REVIEW_ALREADY_EXISTS')
+  })
+
+  it('refuses a review from someone who never bought it', async () => {
+    const { catalogue } = await deliveredOrder()
+    const stranger = await registerCustomer()
+
+    const response = await request(app)
+      .post(`/api/v1/reviews/products/${catalogue.product._id}`)
+      .set('Authorization', stranger.token)
+      .send({ rating: 5, text: 'I have never seen this product.' })
+    expect(response.status).toBe(403)
+    expect(response.body.error.code).toBe('PURCHASE_REQUIRED')
+  })
+
+  it('never returns one customer the reviews of another', async () => {
+    const { catalogue, customer } = await deliveredOrder()
+    await request(app)
+      .post(`/api/v1/reviews/products/${catalogue.product._id}`)
+      .set('Authorization', customer.token)
+      .send({ rating: 2, text: 'Not for me.' })
+      .expect(201)
+
+    const nosy = await registerCustomer()
+    const mine = await request(app)
+      .get('/api/v1/reviews/mine')
+      .query({ productIds: String(catalogue.product._id) })
+      .set('Authorization', nosy.token)
+      .expect(200)
+    expect(mine.body.data.items).toHaveLength(0)
+  })
+
+  it('treats an unusable productIds filter as matching nothing, not everything', async () => {
+    const { catalogue, customer } = await deliveredOrder()
+    await request(app)
+      .post(`/api/v1/reviews/products/${catalogue.product._id}`)
+      .set('Authorization', customer.token)
+      .send({ rating: 5, text: 'Good.' })
+      .expect(201)
+
+    // Falling back to "no filter" on a bad value would hand back the customer's
+    // entire review history to a caller asking about one junk id.
+    const mine = await request(app)
+      .get('/api/v1/reviews/mine')
+      .query({ productIds: 'not-an-id' })
+      .set('Authorization', customer.token)
+      .expect(200)
+    expect(mine.body.data.items).toHaveLength(0)
+  })
+})

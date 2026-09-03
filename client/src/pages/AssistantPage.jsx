@@ -40,7 +40,12 @@ function Recommendation({ item }) {
   return (
     <article className="assistant-card">
       <Link to={`/products/${item.productId}`} className="assistant-card-image">
-        <ProductImage url={item.imageUrl} alt={item.title} label={item.title} />
+        <ProductImage
+          url={item.imageUrl}
+          alt={item.title}
+          label={item.title}
+          seed={item.productId}
+        />
       </Link>
       <div className="assistant-card-body">
         <span className="product-brand">{item.brand || 'Independent label'}</span>

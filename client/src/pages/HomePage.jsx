@@ -89,6 +89,7 @@ function CategoryDealCard({ category }) {
                 url={product.images?.[0]?.url}
                 alt={product.images?.[0]?.alt}
                 label={product.title}
+                seed={product._id}
               />
               <span className="deal-price">{formatMoney(priceOf(product), product.currency)}</span>
             </Link>

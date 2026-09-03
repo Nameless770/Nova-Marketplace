@@ -53,6 +53,36 @@ export async function listProductReviews(productId, query) {
   }
 }
 
+/**
+ * The customer's own reviews, whatever their moderation state.
+ *
+ * `listProductReviews` deliberately shows only published ones, so an author
+ * cannot see their own review until a moderator releases it — which would leave
+ * the orders page offering to review something already reviewed, and failing
+ * with a duplicate error on submit. Authors always see their own work.
+ *
+ * `productIds` narrows it to the products on one order rather than fetching a
+ * customer's entire review history to render a handful of lines.
+ */
+export async function listMyReviews(customerId, { productIds } = {}) {
+  const filter = { customerId }
+  if (productIds) {
+    const ids = String(productIds)
+      .split(',')
+      .map((id) => id.trim())
+      .filter((id) => mongoose.isValidObjectId(id))
+    // An explicit but entirely invalid filter must return nothing, not
+    // everything — falling back to "no filter" would leak the whole history.
+    filter.productId = { $in: ids }
+  }
+  const reviews = await Review.find(filter)
+    .select('productId rating title text status createdAt')
+    .sort({ createdAt: -1 })
+    .limit(200)
+    .lean()
+  return { items: reviews }
+}
+
 export async function createReview(customerId, productId, { rating, title, text, images }) {
   validId(productId, 'PRODUCT_NOT_FOUND', 'Product not found')
   const product = await Product.findById(productId).lean()

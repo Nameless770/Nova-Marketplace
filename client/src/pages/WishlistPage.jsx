@@ -35,6 +35,7 @@ export function WishlistPage() {
                 url={item.product?.image?.url}
                 alt={item.product?.image?.alt}
                 label={item.product?.title}
+                seed={item.productId}
               />
             </Link>
             <div>

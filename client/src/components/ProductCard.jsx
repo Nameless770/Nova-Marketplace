@@ -91,6 +91,7 @@ export function ProductCard({ product }) {
             url={product.images?.[0]?.url}
             alt={product.images?.[0]?.alt}
             label={product.title}
+            seed={product._id}
           />
         </Link>
         {isShopper && (

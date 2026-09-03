@@ -5,10 +5,12 @@ import { OrderTracker } from '../src/components/OrderTracker.jsx'
 // The tracker turns one status string into five step states. That mapping is
 // what a customer reads to know where their order is, and nothing else asserts
 // it — so these test the mapping rather than the markup.
-const stateOf = (label) => {
-  const step = screen.getByText(label).closest('.tracker-step')
-  return ['done', 'current', 'upcoming'].find((state) => step.classList.contains(`is-${state}`))
-}
+const stepOf = (label) => screen.getByText(label).closest('.tracker-step')
+const stateOf = (label) =>
+  ['done', 'current', 'arrived', 'upcoming'].find((state) =>
+    stepOf(label).classList.contains(`is-${state}`),
+  )
+const tickOf = (label) => stepOf(label).querySelector('.tracker-marker').textContent.trim()
 
 describe('OrderTracker', () => {
   it('marks earlier steps done, the current one current, and later ones upcoming', () => {
@@ -21,12 +23,34 @@ describe('OrderTracker', () => {
     expect(stateOf('Delivered')).toBe('upcoming')
   })
 
-  it('marks every step done once delivered', () => {
+  it('shows a delivered order as finished, not still in progress', () => {
     render(<OrderTracker status="delivered" statusHistory={[]} />)
 
     expect(stateOf('Confirmed')).toBe('done')
     expect(stateOf('Shipped')).toBe('done')
-    expect(stateOf('Delivered')).toBe('current')
+    // `current` would give the last step the hollow "you are here" marker every
+    // in-progress step gets, and a delivered order then looks unfinished.
+    expect(stateOf('Delivered')).toBe('arrived')
+    expect(stateOf('Delivered')).not.toBe('current')
+  })
+
+  it('ticks the final step once it is reached', () => {
+    render(<OrderTracker status="delivered" statusHistory={[]} />)
+    expect(tickOf('Delivered')).toBe('✓')
+  })
+
+  it('leaves the final step unticked while it is still to come', () => {
+    render(<OrderTracker status="shipped" statusHistory={[]} />)
+    expect(tickOf('Delivered')).toBe('')
+    // The step actually in progress stays hollow — that is the correct signal
+    // for a step under way, and this change must not have flattened it.
+    expect(tickOf('Shipped')).toBe('')
+    expect(stateOf('Shipped')).toBe('current')
+  })
+
+  it('keeps the delivered step as the screen reader position', () => {
+    render(<OrderTracker status="delivered" statusHistory={[]} />)
+    expect(stepOf('Delivered').getAttribute('aria-current')).toBe('step')
   })
 
   it('shows nothing as reached while the order is still pending', () => {

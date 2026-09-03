@@ -39,6 +39,7 @@ export function RecommendationShelf({ title, fetcher, emptyLabel, showReasons = 
                 url={item.imageUrl}
                 alt={item.title}
                 label={item.title}
+                seed={item.productId}
                 loading="lazy"
               />
             </Link>

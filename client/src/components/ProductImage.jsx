@@ -1,20 +1,35 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { productArtwork } from '../lib/productArtwork.js'
 import { placeholderImage } from '../utils/placeholderImage.js'
 
-// One image element for every product surface. Shows the real photo when it
-// loads, and otherwise a generated monogram tile. `label` seeds the
-// placeholder — pass the product title so the fallback is recognisable.
-//
-// `onError` handles a source that fails outright. The timeout is a separate
-// safety net for a host that *hangs* (never resolves): when it fires we read the
-// real element's load state (`complete && naturalWidth`) rather than a flag —
-// a cached image can fire `onLoad` before effects run, so a flag would race.
-export function ProductImage({ url, alt, label, className, loading, timeoutMs = 12000 }) {
+/**
+ * One image element for every product surface.
+ *
+ * The photograph is what a shopper should see, so `url` wins whenever it loads.
+ * `seed` — pass the product id — only decides what is shown when it does not:
+ * instead of a monogram tile, the product is drawn from its own title, which at
+ * least depicts the right kind of object. The same description builds the 3D
+ * model on the details page, so the fallback and the model agree.
+ *
+ * `onError` handles a source that fails outright. The timeout is a separate net
+ * for a host that *hangs*, and it reads the element's real load state
+ * (`complete && naturalWidth`) rather than a flag, because a cached image can
+ * fire `onLoad` before effects run.
+ */
+export function ProductImage({ url, alt, label, seed, className, loading, timeoutMs = 12000 }) {
   // Record which URL failed/timed out (not a boolean), so a new `url` — e.g. the
   // details page as you navigate between products — is retried automatically.
   const [failedUrl, setFailedUrl] = useState(null)
   const [timedOutUrl, setTimedOutUrl] = useState(null)
   const imgRef = useRef(null)
+
+  const fallback = useMemo(
+    () =>
+      seed
+        ? productArtwork(label || alt || 'Product', String(seed))
+        : placeholderImage(label || alt || 'Product'),
+    [seed, label, alt],
+  )
 
   useEffect(() => {
     if (!url) return undefined
@@ -25,7 +40,6 @@ export function ProductImage({ url, alt, label, className, loading, timeoutMs = 
     return () => clearTimeout(id)
   }, [url, timeoutMs])
 
-  const fallback = placeholderImage(label || alt || 'Product')
   const useFallback = !url || failedUrl === url || timedOutUrl === url
   const src = useFallback ? fallback : url
 
