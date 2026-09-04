@@ -73,16 +73,22 @@ These are load-bearing. Breaking one causes a subtle bug rather than a crash.
 
 ### Implemented, with backend and UI
 
-- **Authentication & registration** — JWT access tokens, role-based authorisation
+- **Authentication & registration** — JWT access tokens, role-based authorisation, plus
+  **Sign in with Google** (OAuth 2.0 authorization-code flow, [details](#authentication))
 - **Catalogue** — products, variants, categories; seller-managed creation and editing
-- **Search** — MongoDB `$text`, cursor pagination, facets, price/rating/category filters
+- **Search & filtering** — MongoDB `$text`, cursor pagination, category / rating / **price-range**
+  filters with clearable filter chips
+- **Product media** — real photos with a generated fallback, plus an interactive **3D model** view
+  on the product page (lazy-loaded Three.js)
 - **Cart & wishlist** — live item count in the header, quantity stepper on product cards
 - **Checkout** — coupon validation, inventory reservation, map-based delivery location
 - **Cash on delivery** — orders confirm on placement; payment is collected at handover
 - **Order tracking** — `confirmed → preparing → shipped → out for delivery → delivered`, with a
   timestamped status history shown as a progress tracker
 - **Refunds** — partial, idempotent, concurrency-safe; allocated per seller
-- **Reviews** — display only (see gaps below)
+- **Reviews** — star rating and comment, offered per product on a delivered order; verified-purchase
+  badge; author sees their own review before moderation
+- **Questions & answers** — shoppers ask on the product page, sellers answer, both moderated
 - **Seller dashboard** — 8 sections including revenue analytics and order fulfilment
 - **Admin dashboard** — 9 sections including refunds and moderation
 - **Recommendations** — "for you", similar products, recently viewed
@@ -92,20 +98,19 @@ These are load-bearing. Breaking one causes a subtle bug rather than a crash.
 
 ### Implemented backend, no user interface
 
-| Feature                      | Endpoint                            |
-| ---------------------------- | ----------------------------------- |
-| AI natural-language search   | `POST /api/v1/ai/search`            |
-| AI admin analytics assistant | `POST /api/v1/ai/admin-assistant`   |
-| Write a review               | `POST /api/v1/reviews/products/:id` |
-| Questions & answers          | `/api/v1/qa/*`                      |
-| Seller coupons               | `/api/v1/coupons/seller`            |
-| Customer notifications       | `/api/v1/notifications`             |
-| Profile addresses / password | `/api/v1/users/me/*`                |
+| Feature                       | Endpoint                                                          |
+| ----------------------------- | ----------------------------------------------------------------- |
+| AI natural-language search    | `POST /api/v1/ai/search`                                          |
+| AI admin analytics assistant  | `POST /api/v1/ai/admin-assistant`                                 |
+| Seller application / approval | `POST /api/v1/sellers/applications` (approval UI exists in admin) |
+| Seller coupons                | `/api/v1/coupons/seller`                                          |
+| Customer notifications        | `/api/v1/notifications`                                           |
+| Profile addresses / password  | `/api/v1/users/me/*`                                              |
 
 ### Not built
 
-Seller payouts and ledger · outbox pattern · Redis · analytics rollups · metric collection
-infrastructure ([see Monitoring](#monitoring)) · error tracking (Sentry).
+Seller payouts and ledger · outbox pattern · Redis · analytics rollups · refresh tokens · metric
+collection infrastructure ([see Monitoring](#monitoring)) · error tracking (Sentry).
 
 ---
 
@@ -147,19 +152,19 @@ use `MongoMemoryReplSet`; Docker Compose runs `--replSet rs0`.
 
 ## Tech stack
 
-| Layer         | Technology                                                        |
-| ------------- | ----------------------------------------------------------------- |
-| Frontend      | React 19, Vite, React Router 7, Axios, Leaflet (delivery map)     |
-| Backend       | Node.js 22, Express 5, pure ESM (`"type": "module"`)              |
-| Database      | MongoDB with Mongoose 8 — replica set required                    |
-| Auth          | JSON Web Tokens (`jsonwebtoken`), bcrypt password hashing         |
-| AI            | Anthropic SDK, plus an OpenAI-compatible transport                |
-| Payments      | Cash on delivery; Stripe SDK retained for the refund path         |
-| Observability | `pino` structured logging, `prom-client` metrics                  |
-| Testing       | Vitest + Supertest (backend), Vitest + Testing Library (frontend) |
-| Tooling       | ESLint (flat config), Prettier                                    |
-| CI            | GitHub Actions                                                    |
-| Packaging     | Docker (multi-stage), Kubernetes manifests                        |
+| Layer         | Technology                                                                  |
+| ------------- | --------------------------------------------------------------------------- |
+| Frontend      | React 19, Vite, React Router 7, Axios, Leaflet (map), Three.js (3D viewer)  |
+| Backend       | Node.js 22, Express 5, pure ESM (`"type": "module"`)                        |
+| Database      | MongoDB with Mongoose 8 — replica set required                              |
+| Auth          | JSON Web Tokens (`jsonwebtoken`), bcrypt hashing, Google OAuth 2.0 (no SDK) |
+| AI            | Anthropic SDK, plus an OpenAI-compatible transport                          |
+| Payments      | Cash on delivery; Stripe SDK retained for the refund path                   |
+| Observability | `pino` structured logging, `prom-client` metrics                            |
+| Testing       | Vitest + Supertest (backend), Vitest + Testing Library (frontend)           |
+| Tooling       | ESLint (flat config), Prettier                                              |
+| CI            | GitHub Actions                                                              |
+| Packaging     | Docker (multi-stage), Kubernetes manifests                                  |
 
 ---
 
@@ -186,7 +191,7 @@ use `MongoMemoryReplSet`; Docker Compose runs `--replSet rs0`.
 │   ├── services/               Business logic; owns transactions
 │   │   └── ai/                 Provider, prompts, schemas, grounding
 │   ├── scripts/                Seeding and maintenance
-│   ├── test/                   15 Vitest suites + factories
+│   ├── test/                   20 Vitest suites + factories
 │   ├── app.js                  Express app (middleware, routes, error handler)
 │   └── server.js               Entry point: connect DB, then listen
 │
@@ -220,6 +225,9 @@ All server configuration lives in `server/.env`. A template is committed at
 | `STRIPE_WEBHOOK_SECRET`           | no            | Verifies inbound Stripe webhooks                                |
 | `PAYMENT_SUCCESS_URL`             | no            | Post-checkout redirect                                          |
 | `PAYMENT_CANCEL_URL`              | no            | Cancelled-checkout redirect                                     |
+| `GOOGLE_CLIENT_ID`                | no            | Enables Google sign-in. Absent ⇒ the button is hidden           |
+| `GOOGLE_CLIENT_SECRET`            | conditional   | Required with `GOOGLE_CLIENT_ID`                                |
+| `GOOGLE_CALLBACK_URL`             | no            | Defaults to `/api/v1/auth/google/callback` on localhost:5000    |
 
 Ports are pinned rather than incidental: `CLIENT_ORIGIN` builds the CORS allowlist and the client
 defaults to `http://localhost:5000/api/v1`. Running either service on a different port produces
@@ -329,26 +337,26 @@ All endpoints are versioned under `/api/v1` and return a consistent envelope:
 { "success": false, "error": { "code": "ORDER_NOT_FOUND", "message": "Order not found" } }
 ```
 
-| Prefix             | Endpoints | Purpose                                        |
-| ------------------ | --------: | ---------------------------------------------- |
-| `/auth`            |         4 | Register, log in, log out, current user        |
-| `/products`        |        11 | Public catalogue plus seller-scoped management |
-| `/categories`      |         4 | Category tree                                  |
-| `/cart`            |         5 | Cart contents and line items                   |
-| `/wishlist`        |         3 | Saved products                                 |
-| `/orders`          |         6 | Customer orders and seller fulfilment          |
-| `/payments`        |         3 | Checkout session, status, webhook              |
-| `/refunds`         |         3 | Refundable amount, history, create             |
-| `/reviews`         |         4 | Product reviews                                |
-| `/qa`              |         4 | Product questions and answers                  |
-| `/coupons`         |         5 | Validation and seller coupons                  |
-| `/inventory`       |         8 | Stock levels and adjustments                   |
-| `/sellers`         |         9 | Store profile, dashboard, analytics            |
-| `/admin`           |        21 | Platform administration                        |
-| `/recommendations` |         3 | For-you, similar, recently viewed              |
-| `/notifications`   |         3 | User notifications                             |
-| `/users`           |         8 | Profile, addresses, password                   |
-| `/ai`              |         3 | Assistant, search, admin assistant             |
+| Prefix             | Endpoints | Purpose                                          |
+| ------------------ | --------: | ------------------------------------------------ |
+| `/auth`            |         7 | Register, log in/out, current user, Google OAuth |
+| `/products`        |        11 | Public catalogue plus seller-scoped management   |
+| `/categories`      |         4 | Category tree                                    |
+| `/cart`            |         5 | Cart contents and line items                     |
+| `/wishlist`        |         3 | Saved products                                   |
+| `/orders`          |         6 | Customer orders and seller fulfilment            |
+| `/payments`        |         3 | Checkout session, status, webhook                |
+| `/refunds`         |         3 | Refundable amount, history, create               |
+| `/reviews`         |         5 | Product reviews, plus the author's own reviews   |
+| `/qa`              |         4 | Product questions and answers                    |
+| `/coupons`         |         5 | Validation and seller coupons                    |
+| `/inventory`       |         8 | Stock levels and adjustments                     |
+| `/sellers`         |         9 | Store profile, dashboard, analytics              |
+| `/admin`           |        21 | Platform administration                          |
+| `/recommendations` |         3 | For-you, similar, recently viewed                |
+| `/notifications`   |         3 | User notifications                               |
+| `/users`           |         8 | Profile, addresses, password                     |
+| `/ai`              |         3 | Assistant, search, admin assistant               |
 
 Health endpoints sit outside the versioned surface — see [Monitoring](#monitoring).
 
@@ -375,6 +383,22 @@ Stateless JWT bearer tokens. `Authorization: Bearer <token>` on every protected 
 - `optionalAuthenticate` — attaches the user when a token is present, for public routes that
   behave differently when signed in. Never a substitute for `authenticate`.
 - `authorize(...roles)` — role gate applied after authentication.
+
+**Sign in with Google** (`server/services/googleAuthService.js`): OAuth 2.0 authorization-code
+flow, implemented with two `fetch` calls and no SDK. The server — never the browser — exchanges the
+code for the profile and mints its own JWT. Three safeguards make it real rather than decorative:
+
+- A random `state` value, stored in an httpOnly cookie and checked on the callback, blocks
+  login-CSRF.
+- The session is returned in the URL **fragment**, not the query string, so the token never reaches
+  a server access log or a `Referer` header.
+- A Google identity may attach to an existing account **only when Google marks the email verified** —
+  otherwise it is an account takeover. A Google-only account has no password hash, and the password
+  login path guards against comparing against an absent hash.
+
+The flow is code-complete with 13 tests (`server/test/google-oauth.test.js`, Google stubbed at the
+network boundary). It is dormant until `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` are set; without
+them the endpoints return `503` and the button is hidden.
 
 **Brute-force protection:** five consecutive failures lock an account, with a separate per-IP cap
 to limit credential spraying. Only failures count toward the limit.
@@ -443,8 +467,11 @@ npm test --prefix server   # backend
 npm test --prefix client   # frontend
 ```
 
-**197 backend tests across 18 suites** and **27 frontend tests across 5 suites**, all passing. Vitest and Supertest run against an in-memory MongoDB
-replica set, so transactions behave as they do in production.
+**222 backend tests across 20 suites** and **56 frontend tests across 7 suites**, all passing.
+Vitest and Supertest run against an in-memory MongoDB replica set, so transactions behave as they do
+in production. The backend suites include a full end-to-end order lifecycle (register → cart →
+checkout → pay → fulfil → review) and the Google OAuth flow with Google stubbed at the network
+boundary.
 
 Two standing conventions:
 
@@ -456,8 +483,9 @@ Two standing conventions:
 
 Frontend tests use Vitest with React Testing Library, and target the seams most likely to break
 silently rather than a coverage number: the cart context's quantity and removal logic, the order
-tracker's status-to-step mapping, the product card's stepper and wishlist toggle, and the AI
-assistant's loading, error and no-match branches.
+tracker's status-to-step mapping (including the delivered end state), the product card's stepper and
+wishlist toggle, the review form's rating / submit / already-reviewed states, the AI assistant's
+loading and no-match branches, and the generated product artwork's uniqueness and rotation.
 
 > Coverage is deliberately partial. Many components are still untested; the ones that carry state
 > transitions or failure handling are not.
@@ -598,7 +626,14 @@ Both are the next infrastructure step, not something the code is waiting on.
   production without `CLIENT_ORIGIN`, rather than failing open to `localhost`.
 - **bcrypt** password hashing; the hash is never loaded into request scope.
 - **JWT algorithm pinning** plus issuer/audience verification.
-- **Login brute-force lockout** with a per-IP spray cap.
+- **Login brute-force lockout** with a per-IP spray cap, plus a **global per-IP request ceiling**
+  above every router.
+- **Google OAuth login-CSRF protection** — a random `state` in an httpOnly cookie is verified on the
+  callback, and the session returns in the URL fragment so it never lands in a log.
+- **Secret redaction at the logger**, including the request URL — the OAuth callback's `?code=` is a
+  live credential and is scrubbed before any log line is written.
+- **Image URL scheme allowlist** — seller-supplied image URLs are validated against an `https:`-only
+  allowlist at the boundary, closing the stored-`javascript:`/`data:` XSS vector.
 - **Append-only audit log** on all six privileged mutations, written _inside_ the transaction where
   one exists, so an audit entry cannot survive a rolled-back change.
 - **Idempotency enforced by unique indexes** on checkout, payments and refunds — a retry cannot
@@ -614,13 +649,13 @@ Both are the next infrastructure step, not something the code is waiting on.
 
 These are real and deliberately listed rather than hidden:
 
-- **No image URL scheme allowlist** — product image URLs are not restricted by scheme.
 - **AI egress PII redaction** is designed but not implemented.
 - **Dual source of truth on seller approval** — `Seller.status` and `user.sellerApprovalStatus` can
   in principle diverge.
-- **No global rate limit** — limits are per-route, not a request ceiling.
 - **Rate limiting is in-process**, so it weakens under horizontal scaling
-  ([see caveat](#horizontal-scaling-caveat)).
+  ([see caveat](#horizontal-scaling-caveat)); the same applies to the login lockout.
+- **No refresh tokens** — access tokens are short-lived with no silent renewal, so a long session
+  can expire mid-flow and a role change (e.g. newly-approved seller) requires re-login.
 - **A live database credential was previously committed** to `server/.env.example` and pushed. The
   file is scrubbed and the credential has since been rotated, but the old value remains in git
   history. Rotation — not history rewriting — is what makes such a leak safe.
