@@ -1,0 +1,82 @@
+# Render Blueprint — Nova Market
+#
+# Creates both services in one sync:
+#   nova-api  Docker web service  (server/)  -> https://nova-api.onrender.com
+#   nova-web  static site         (client/)  -> https://nova-web.onrender.com
+#
+# MongoDB is NOT defined here: the app keeps using the existing Atlas cluster,
+# supplied as MONGODB_URI in the dashboard.
+#
+# Atlas must allow 0.0.0.0/0 in Network Access. Render's free tier has no
+# static outbound IPs, and server.js awaits connectDatabase() *before*
+# app.listen(), so an unreachable cluster means the port never opens and the
+# deploy fails on port detection rather than on a health check.
+#
+# URLs are hardcoded, not wired with `fromService`, because:
+#   - `fromService: property: host` is documented as "web services and private
+#     services only" and returns the *private network* hostname — not the
+#     public onrender.com host a browser needs, and not available at all for
+#     static sites.
+#   - Render does not support variable interpolation in Blueprint files, so
+#     there is no way to compose "https://" + host + "/api/v1".
+# If Render appends a suffix because a name is already taken globally
+# (e.g. nova-api-a1b2.onrender.com), fix CLIENT_ORIGIN and VITE_API_URL in the
+# dashboard — VITE_API_URL is inlined at build time, so the static site needs a
+# redeploy after that change, not just a restart.
+
+services:
+  # ---------------------------------------------------------------- backend --
+  - type: web
+    name: nova-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    # Liveness, not readiness: /api/health never touches Mongo. Render restarts
+    # a service on repeated health-check failures, so pointing this at
+    # /api/health/ready (which 503s whenever Mongo blips) would turn a slow
+    # database into a restart loop.
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Matches `ENV PORT=5000` and `EXPOSE 5000` in server/Dockerfile, which
+      # server.js reads as `Number(process.env.PORT || 5000)`.
+      - key: PORT
+        value: 5000
+      # Supplied in the dashboard at Blueprint creation — never committed.
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      # app.js throws at startup if this is unset while NODE_ENV=production,
+      # and cors() takes a single exact origin string (no trailing slash).
+      - key: CLIENT_ORIGIN
+        value: https://nova-web.onrender.com
+
+  # --------------------------------------------------------------- frontend --
+  - type: web
+    name: nova-web
+    runtime: static
+    # Not an npm workspaces monorepo: root, client and server each have their
+    # own package-lock.json, and the root lockfile contains no Vite. A bare
+    # `npm ci` at the root installs only the lint/format tooling, so the client
+    # install has to be explicit.
+    buildCommand: npm ci --prefix client && npm run build --prefix client
+    staticPublishPath: ./client/dist
+    autoDeploy: true
+    envVars:
+      # Read as `import.meta.env.VITE_API_URL` in client/src/services/api.js and
+      # inlined by Vite at build time. The old relative default (/api/v1) only
+      # worked because client/nginx.conf proxied /api to the backend; a static
+      # site has no proxy, so this must be absolute and CORS now applies.
+      - key: VITE_API_URL
+        value: https://nova-api.onrender.com/api/v1
+    routes:
+      # React Router 7 BrowserRouter: deep links must be served index.html
+      # instead of a 404.
+      - type: rewrite
+        source: /*
+        destination: /index.html

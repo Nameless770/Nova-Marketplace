@@ -38,6 +38,21 @@ if (process.env.NODE_ENV === 'production' && !process.env.CLIENT_ORIGIN) {
   throw new Error('CLIENT_ORIGIN must be set in production')
 }
 
+// In production the app sits behind exactly one reverse proxy (Render), so the
+// client's real address is the last entry in X-Forwarded-For -- which is what
+// `1` tells Express to take. Without this, `request.ip` is the proxy's address
+// for every visitor: one shared global rate-limit bucket, and a credential
+// lockout that locks out every user at once.
+//
+// `1`, never `true`: `true` trusts the whole X-Forwarded-For chain, so a client
+// can prepend any address it likes and present itself as a fresh IP on every
+// request, defeating both the rate limiter and the credential guard. Left off
+// outside production, where there is no proxy and the socket address is already
+// the truth.
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
+
 // Observability first, so a request that is rejected by a later layer — CORS, a
 // rate limit, a malformed body — still appears in the logs and the metrics.
 // Anything mounted above this point is effectively invisible.
