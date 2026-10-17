@@ -1,0 +1,16 @@
+{
+  "framework": null,
+  "installCommand": "npm install && npm install --prefix server && npm install --prefix client",
+  "buildCommand": "VITE_API_URL=/api/v1 npm run build --prefix client",
+  "outputDirectory": "client/dist",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30,
+      "includeFiles": "server/node_modules/bcrypt/**"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
