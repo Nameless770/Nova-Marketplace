@@ -1,16 +1,31 @@
 {
-  "framework": null,
-  "installCommand": "npm install && npm install --prefix server && npm install --prefix client",
-  "buildCommand": "VITE_API_URL=/api/v1 npm run build --prefix client",
-  "outputDirectory": "client/dist",
-  "functions": {
-    "api/index.js": {
-      "maxDuration": 30,
-      "includeFiles": "server/node_modules/bcrypt/**"
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "client": {
+      "root": "client",
+      "framework": "vite",
+      "buildCommand": "VITE_API_URL=/api/v1 npm run build"
+    },
+    "server": {
+      "root": "server",
+      "framework": "express",
+      "entrypoint": "vercel-handler.js",
+      "functions": {
+        "vercel-handler.js": {
+          "maxDuration": 30,
+          "includeFiles": "node_modules/bcrypt/**"
+        }
+      }
     }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": { "service": "server" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "client" }
+    }
   ]
 }
