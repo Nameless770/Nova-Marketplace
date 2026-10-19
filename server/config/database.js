@@ -3,7 +3,15 @@ import mongoose from 'mongoose'
 import { instrumentMongo } from '../middleware/metrics.js'
 import { logger } from '../utils/logger.js'
 
-export async function connectDatabase() {
+/**
+ * @param serverSelectionTimeoutMS  How long to hunt for a reachable server
+ *   before giving up. Mongoose defaults to 30s, which is fine for a
+ *   long-running process that can afford to wait and retry. A serverless
+ *   invocation cannot: its own budget is 30s, so the default guarantees the
+ *   function is killed before the driver ever reports failure, turning an
+ *   unreachable database into an opaque 504 instead of a readable error.
+ */
+export async function connectDatabase({ serverSelectionTimeoutMS } = {}) {
   const mongoUri = process.env.MONGODB_URI
 
   if (!mongoUri) {
@@ -23,7 +31,10 @@ export async function connectDatabase() {
 
   // `monitorCommands` is what emits the events the metrics layer times. It costs
   // an event per command, which is negligible next to the round trip itself.
-  await mongoose.connect(mongoUri, { monitorCommands: true })
+  await mongoose.connect(mongoUri, {
+    monitorCommands: true,
+    ...(serverSelectionTimeoutMS ? { serverSelectionTimeoutMS } : {}),
+  })
   instrumentMongo(mongoose.connection.getClient())
   logger.info('MongoDB connected')
 }
